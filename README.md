@@ -32,14 +32,13 @@ shades toggle # or shades t
 However, for this to do anything, you'll need to set up the server and at least
 one client.
 
-### Setting up the server
+### Step 1/3: setting up the server
 
 For `shades` to work at all, it must be running in server mode (`shades -s`) in
 the background.  
 
 
-### Setting up clients 
-
+### Step 2/3: setting up clients 
 
 While `shades` is designed to be used by developers and configured with code,
 batteries are included for many popular tools, including:
@@ -63,9 +62,21 @@ shades -l
 ```
 
 The `shades.nvim` plugin enables theming Neovim, and provides a second example
-of implementing a `shades` client.
+of implementing a `shades` client. See more about implementing your own clients in the next section.
 
-#### Implementing your own clients
+### Step 3/3: daemonizing (optional but highly recommended)
+
+You can experiment with `shades` by just running `shades -s` and `shades -c
+...` in a terminal, but my recommendation is that you eventually daemonize both
+of these.
+
+This repo provides a TUI to automate this called `shades-daemonizer`, but it
+only supports Macs/`launchd` at the moment. To install the TUI, open up the
+`daemonizer` directory and run `go install`. Then run with a simple
+`shades-daemonizer` - you can re-run as needed to edit the configuration of the
+daemon.
+
+## Implementing your own clients
 
 Because UNIX sockets are a widely supported transport technology, and the
 protocol we build on top of it is trivial to implement in any language, you can
@@ -80,7 +91,7 @@ func (f FooClient) SetTheme(theme string) error {}
 ```
 with code that themes the thing you want themed, then you should do that. 
 
-##### Protocol
+### Protocol
 
 `shades` uses a simple plain text protocol with 5 `verb:noun` messages:
 1. `subscribe:name` - begin receiving `set` messages
@@ -99,17 +110,6 @@ Each message is delimited by a `\n` character.
 `subscribe`s, waits for and acts open any `set`, and fires an `unsubscribe` on
 shutdown.
 
-### Optional but highly recommended
-
-You can experiment with `shades` by just running `shades -s` and `shades -c
-...` in a terminal, but my recommendation is that you eventually daemonize both
-of these.
-
-This repo provides a TUI to automate this called `shades-daemonizer`, but it
-only supports Macs/`launchd` at the moment. To install the TUI, open up the
-`daemonizer` directory and run `go install`. Then run with a simple
-`shades-daemonizer` - you can re-run as needed to edit the configuration of the
-daemon.
 
 ## TODOs
 - [ ] turn the neovim stuff into a proper plugin
