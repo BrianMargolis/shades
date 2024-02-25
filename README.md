@@ -43,8 +43,9 @@ the background.
 
 While `shades` is designed to be used by developers and configured with code,
 batteries are included for many popular tools, including:
-- tmux
 - alacritty
+- bat (requires fish)
+- tmux
 - fzf
 - bat 
 - btop
