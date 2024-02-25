@@ -10,7 +10,8 @@ find themselves with at least two tools that are theme-able. At this point,
 `shades` can be introduced as essentially a multiplexer - you tell `shades` that
 you want dark mode, and `shades` tells all your individual tools.
 
-TODO: little video demo
+A little demo of shades - this is toggling the theme in six separate components at once (neovim, neovim status line, tmux, alacritty, the wallpaper, and mac dark/light itself - which [dark reader](https://chromewebstore.google.com/detail/dark-reader/eimadpbcbfnmbkopoojfekhnkhdbieeh) syncs over to Chrome):
+![shades in action](./docs/shades.gif)
 
 ## Installation 
 
