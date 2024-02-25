@@ -1,82 +1,65 @@
 package client
 
 import (
-	"brianmargolis/shades/protocol"
 	"bufio"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 type AlacrittyClient struct{}
 
 func (a AlacrittyClient) Start(socket string, config map[string]string) error {
-	read, write, err := SocketAsChannel(socket)
-	if err != nil {
-		return err
-	}
-
-	write <- string(protocol.Subscribe("alacritty"))
-	for message := range read {
-		verb, noun, err := protocol.Parse(message)
-		if err != nil {
-			return err
-		}
-
-		if verb == "set" {
-			theme := strings.TrimSpace(noun)
-			err = a.set(theme)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-
-	return nil
+	return SubscribeToSocket(a.set(config))(socket)
 }
 
-func (a AlacrittyClient) set(theme string) error {
-	alacrittyConfigPath := os.Getenv("HOME") + "/.config/alacritty/alacritty.toml"
-	themePath := fmt.Sprintf("\"~/.config/alacritty/themes/themes/everforest_%s.toml\"", theme)
-	return a.replaceLineInFile(alacrittyConfigPath, 2, themePath)
+func (a AlacrittyClient) set(config map[string]string) func(string) error {
+	return func(theme string) error {
+		alacrittyConfigPath := config["alacritty-config-path"]
+		if alacrittyConfigPath == "" {
+			alacrittyConfigPath = os.Getenv("HOME") + "/.config/alacritty/alacritty.toml"
+		}
+
+		themePath := config["light-theme-path"]
+		if theme == "dark" {
+			themePath = config["dark-theme-path"]
+		}
+
+		return a.replaceAtShadesTag(alacrittyConfigPath, themePath)
+	}
 }
 
-// ReplaceLineInFile replaces a specific line in a file with a given replacement string.
-// `filePath` is the path to the file, `lineNumber` is the 1-based line number to replace,
-// and `replacement` is the new content for the specified line.
-func (a AlacrittyClient) replaceLineInFile(filePath string, lineNumber int, replacement string) error {
-	// Open the original file for reading.
-	file, err := os.Open(filePath)
+func (a AlacrittyClient) replaceAtShadesTag(filePath string, replacement string) error {
+	f, err := os.Open(filePath)
 	if err != nil {
-		return fmt.Errorf("opening file: %w", err)
+		return errors.Wrap(err, "opening file")
 	}
-	defer file.Close()
+	defer f.Close()
 
-	// Create a temporary file where the modified content will be written.
-	tempFile, err := os.CreateTemp("", "tempfile-")
+	// write the modified version to a temp file
+	tmp, err := os.CreateTemp("", "tempfile-")
 	if err != nil {
-		return fmt.Errorf("creating temp file: %w", err)
+		return errors.Wrap(err, "creating temp file")
 	}
-	defer tempFile.Close()
+	defer tmp.Close()
 
-	// Use bufio for efficient reading and writing.
-	reader := bufio.NewReader(file)
-	writer := bufio.NewWriter(tempFile)
-
-	// Iterate over each line in the file.
-	currentLine := 1
+	didReplacement := false
+	reader := bufio.NewReader(f)
+	writer := bufio.NewWriter(tmp)
 	for {
 		line, err := reader.ReadString('\n')
 
-		// When the target line number is reached, write the replacement string instead.
-		if currentLine == lineNumber {
-			if _, err := writer.WriteString(replacement + "\n"); err != nil {
-				return fmt.Errorf("writing replacement line: %w", err)
+		if strings.Contains(line, "# shades-replace") {
+			didReplacement = true
+			if _, err := writer.WriteString("\"" + replacement + "\"," + " # shades-replace" + "\n"); err != nil {
+				return errors.Wrap(err, "writing replacement line")
 			}
 		} else {
 			if _, err := writer.WriteString(line); err != nil {
-				return fmt.Errorf("writing line: %w", err)
+				return errors.Wrap(err, "writing line")
 			}
 		}
 
@@ -84,24 +67,25 @@ func (a AlacrittyClient) replaceLineInFile(filePath string, lineNumber int, repl
 			if err == io.EOF {
 				break
 			}
-			return fmt.Errorf("reading file: %w", err)
+			return errors.Wrap(err, "reading line")
 		}
-		currentLine++
 	}
 
-	// Ensure all writes are flushed to the temporary file.
+	if !didReplacement {
+		fmt.Printf("WARNING: no '# shades-replace' tag found in %s", filePath)
+	}
+
 	if err := writer.Flush(); err != nil {
-		return fmt.Errorf("flushing writes to temp file: %w", err)
+		return errors.Wrap(err, "flushing temp file")
 	}
 
-	// Close the original file (already deferred) and the temporary file.
-	if err := tempFile.Close(); err != nil {
-		return fmt.Errorf("closing temp file: %w", err)
+	// already deferred, but we want to close the file before renaming it
+	if err := tmp.Close(); err != nil {
+		return errors.Wrap(err, "closing temp file")
 	}
 
-	// Replace the original file with the modified temporary file.
-	if err := os.Rename(tempFile.Name(), filePath); err != nil {
-		return fmt.Errorf("replacing original file with temp file: %w", err)
+	if err := os.Rename(tmp.Name(), filePath); err != nil {
+		return errors.Wrap(err, "replacing original file")
 	}
 
 	return nil
