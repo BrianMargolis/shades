@@ -75,7 +75,7 @@ func SubscribeToSocket(
 				err = setter(theme)
 				if err != nil {
 					fmt.Println("ERROR: ", err)
-					panic(err)
+					return err
 				}
 			}
 		}

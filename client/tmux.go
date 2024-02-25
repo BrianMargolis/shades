@@ -5,49 +5,29 @@ import (
 	"os/exec"
 )
 
-type TMUXClient struct{}
+type TMUXClient struct {
+	config map[string]string
+}
 
 func (t TMUXClient) Start(socket string, config map[string]string) error {
+	t.config = config
 	return SubscribeToSocket(t.set)(socket)
 }
 
 func (t TMUXClient) set(theme string) error {
-	statusBackground := "#2d353b"
-	statusForeground := "#d3c6aa"
-	windowStatusBackground := "#2d353b"
-	windowStatusForeground := "#a7c080"
-	if theme == "light" {
-		statusBackground = "#fdf6e3"
-		statusForeground = "#5c6a72"
-		windowStatusBackground = "#fdf6e3"
-		windowStatusForeground = "#8da101"
+	for _, optionName := range []string{
+		"status-bg",
+		"status-fg",
+		"window-status-format",
+		"window-status-current-format",
+		"status-left",
+		"status-right",
+	} {
+		err := t.setTMUXOption(optionName, t.config[fmt.Sprintf("%s-%s", theme, optionName)])
+		if err != nil {
+			return err
+		}
 	}
-
-	t.setTMUXOption("status-bg", statusBackground)
-	t.setTMUXOption("status-fg", statusForeground)
-	t.setTMUXOption("window-status-format",
-		"#{?#{==:#{session_windows},1},,"+
-			"#[fg="+windowStatusBackground+",bg="+windowStatusForeground+"]"+
-			" "+
-			"#W }",
-	)
-	t.setTMUXOption("window-status-current-format",
-		"#{?#{==:#{session_windows},1},,"+
-			"#[fg="+windowStatusBackground+",bg="+windowStatusForeground+"]"+
-			" *"+
-			"#W* }",
-	)
-	t.setTMUXOption("status-left",
-		"#[fg="+statusBackground+",bg="+windowStatusForeground+"]"+
-			" #(cd #{pane_current_path}; pwd)"+
-			" "+
-			"#[fg="+windowStatusForeground+",bg="+statusBackground+"]",
-	)
-	t.setTMUXOption("status-right",
-		"#[fg="+statusBackground+",bg="+windowStatusForeground+"]"+
-			" "+
-			" #(cd #{pane_current_path}; git branch --show-current) ",
-	)
 
 	return nil
 }

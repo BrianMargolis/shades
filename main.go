@@ -70,7 +70,8 @@ func main() {
 
 				client, ok := CLIENTS[clientName]
 				if ok {
-					client.Start(socketPath, config.Client[clientName])
+					err := client.Start(socketPath, config.Client[clientName])
+					panic(err)
 				} else {
 					fmt.Printf("no such client %s, ignoring\n", clientName)
 				}
