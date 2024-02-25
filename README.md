@@ -45,8 +45,8 @@ While `shades` is designed to be used by developers and configured with code,
 batteries are included for many popular tools, including:
 - alacritty
 - bat (requires fish)
+- fzf (requires fish)
 - tmux
-- fzf
 - bat 
 - btop
 - macos dark/light theme
