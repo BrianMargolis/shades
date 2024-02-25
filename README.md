@@ -120,14 +120,10 @@ shutdown.
 
 ## TODOs
 - [ ] turn the neovim stuff into a proper plugin
-- [ ] basic configuration - stuff like paths
-- [ ] advanced behavioral configuraton
+- [x] basic configuration - stuff like paths
+- [x] advanced behavioral configuraton
 - [x] launchd setup script - want it to be nice and interactive, and ideally
   not fish specific
-- [ ] write tool to more intelligently hunt down the alacritty theme - maybe we
-  just have a build step that pre-pends the theme import.. ugly and now we're
-  really dependent on `shades` to run alacritty at all.. maybe this is a
-  separate tool?
 - [ ] make clients poll server for a bit before giving up - right now if the
   server isn't up, the clients just immediately die, and it would be nice to
   just start both simultaneously.
