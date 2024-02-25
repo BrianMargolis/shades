@@ -6,10 +6,11 @@ is very simple and works over plain text. Each message is delimited by a \n
 character, and is of the structure VERB:NOUN
 
 Where the valid verbs are:
-	- subscribe (valid noun is any string, the name of the client)
-	- unsubscribe
-	- propose (valid nouns are light or dark)
-	- set (valid nouns are light or dark)
+	- subscribe:[client name] (valid noun is any string, the name of the client)
+  - unsubscribe:
+	- propose:[light|dark]
+	- set:[light|dark]
+  - get
 
 An empty noun is valid (e.g. 'subscribe:').
 **/
@@ -27,7 +28,7 @@ func Propose(theme string) []byte {
 }
 
 func Set(theme string) []byte {
-	return []byte("set:" + theme + "\n")
+	return []byte("set:" + theme + "")
 }
 
 func Get() []byte {

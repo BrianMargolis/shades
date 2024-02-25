@@ -1,13 +1,13 @@
 package client
 
 import (
-	"brianmargolis/theme-daemon/protocol"
+	"brianmargolis/shades/protocol"
 	"fmt"
 )
 
 type DebugClient struct{}
 
-func (d DebugClient) Start(socket string) error {
+func (d DebugClient) Start(socket string, config map[string]string) error {
 	fmt.Println("Starting debug client")
 	read, write, err := SocketAsChannel(socket)
 	if err != nil {

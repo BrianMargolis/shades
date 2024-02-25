@@ -1,7 +1,7 @@
 package client
 
 import (
-	"brianmargolis/theme-daemon/protocol"
+	"brianmargolis/shades/protocol"
 	"bufio"
 	"fmt"
 	"io"
@@ -11,7 +11,7 @@ import (
 
 type AlacrittyClient struct{}
 
-func (a AlacrittyClient) Start(socket string) error {
+func (a AlacrittyClient) Start(socket string, config map[string]string) error {
 	read, write, err := SocketAsChannel(socket)
 	if err != nil {
 		return err

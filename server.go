@@ -1,7 +1,7 @@
 package main
 
 import (
-	"brianmargolis/theme-daemon/protocol"
+	"brianmargolis/shades/protocol"
 	"bufio"
 	"fmt"
 	"log"
@@ -16,8 +16,8 @@ import (
 
 const MAX_CLIENTS = 10
 
-func startServer() {
-	socket, err := net.Listen("unix", "/tmp/theme-change.sock")
+func startServer(socketPath string) {
+	socket, err := net.Listen("unix", socketPath)
 	if err != nil {
 		fmt.Println("Error listening: ", err)
 		panic(err)
@@ -143,10 +143,6 @@ func isCurrentlyDark() (bool, error) {
 	}
 
 	return strings.TrimSpace(string(output)) == "true", nil
-}
-
-func setTheme(dark bool) error {
-	return nil
 }
 
 func planForDeath(socket net.Listener) {
