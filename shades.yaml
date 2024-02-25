@@ -1,0 +1,32 @@
+socket-path: "/tmp/theme-change.sock"
+client:
+  mac-wallpaper:
+    dark: "/Users/brian/Pictures/loupe/loupe-mono-dark.heic"
+    light: "/Users/brian/Pictures/loupe/loupe-mono-light.heic"
+  alacritty:
+    alacritty-config-path: "/Users/brian/.config/alacritty/alacritty.toml"
+    light-theme-path: "/Users/brian/.config/alacritty/themes/themes/everforest_light.toml"
+    dark-theme-path: "/Users/brian/.config/alacritty/themes/themes/everforest_dark.toml"
+  bat:
+    dark-theme: "everforest-dark"
+    light-theme: "everforest-light"
+  fzf:
+  # generate these with https://vitormv.github.io/fzf-themes/
+    dark-theme: '--color=fg:#d3c6aa,fg+:#d0d0d0,bg:#232a2e,bg+:#232a2e --color=hl:#425047,hl+:#5fd7ff,info:#dbbc7f,marker:#d699b6 --color=prompt:#7fbbb3,spinner:#a7c080,pointer:#a7c080,header:#e69875 --color=border:#232a2e,label:#9da9a0,query:#d3c6aa --border="rounded" --border-label="" --preview-window="border-rounded" --prompt="> " --marker=">" --pointer="◆" --separator="─" --scrollbar="│"'
+    light-theme: '--color=fg:#5c6a72,fg+:#5c6a72,bg:#fdf6e3,bg+:#fdf6e3 --color=hl:#5f87af,hl+:#5fd7ff,info:#dfa000,marker:#df69ba --color=prompt:#3a94c5,spinner:#8da101,pointer:#8da101,header:#f57d25 --color=border:#fdf6e3,label:#aeaeae,query:#d9d9d9 --border="rounded" --border-label="" --preview-window="border-rounded" --prompt="> " --marker=">" --pointer="◆" --separator="─" --scrollbar="│"'
+  tmux:
+    light-status-bg: "#fdf6e3"
+    light-status-fg: "#5c6a72"
+    light-window-status-format: "#{?#{==:#{session_windows},1},,#[fg=#fdf6e3,bg=#8da101] #W }"
+    light-window-status-current-format: "#{?#{==:#{session_windows},1},,#[fg=#fdf6e3,bg=#8da101] *#W* }"
+    light-status-left: "#[fg=#fdf6e3,bg=#8da101] #(cd #{pane_current_path}; pwd) #[fg=#8da101,bg=#fdf6e3]"
+    light-status-right: "#[fg=#fdf6e3,bg=#8da101]  #(cd #{pane_current_path}; git branch --show-current) "
+    dark-status-bg: "#2d353b"
+    dark-status-fg: "#d3c6aa"
+    dark-window-status-format: "#{?#{==:#{session_windows},1},,#[fg=#2d353b,bg=#a7c080] #W }"
+    dark-window-status-current-format: "#{?#{==:#{session_windows},1},,#[fg=#2d353b,bg=#a7c080] *#W* }"
+    dark-status-left: "#[fg=#2d353b,bg=#a7c080] #(cd #{pane_current_path}; pwd) #[fg=#a7c080,bg=#2d353b]"
+    dark-status-right: "#[fg=#2d353b,bg=#a7c080]  #(cd #{pane_current_path}; git branch --show-current) "
+
+
+

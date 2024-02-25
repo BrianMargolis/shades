@@ -76,6 +76,12 @@ only supports Macs/`launchd` at the moment. To install the TUI, open up the
 `shades-daemonizer` - you can re-run as needed to edit the configuration of the
 daemon.
 
+## Configuration
+`shades` is configured with a yaml file - an example can be found in this repo
+(`shades.yaml`). `shades` will look for this file in:
+1. the path that `SHADES_CONFIG` is set to
+2. if that's empty, `$HOME/.config/shades/shades.yaml`
+
 ## Implementing your own clients
 
 Because UNIX sockets are a widely supported transport technology, and the

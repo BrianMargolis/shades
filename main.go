@@ -109,19 +109,29 @@ type configModel struct {
 }
 
 func getConfig() (configModel, error) {
-	configPath := os.Getenv("HOME") + "/.config/shades/shades.yaml"
-	yamlFile, err := os.Open(configPath)
+	f, err := os.Open(getConfigPath())
 	if err != nil {
 		return configModel{}, err
 	}
 
-	defer yamlFile.Close()
-	decoder := yaml.NewDecoder(yamlFile)
+	defer f.Close()
+
 	config := configModel{}
+	decoder := yaml.NewDecoder(f)
 	err = decoder.Decode(&config)
 	if err != nil {
 		return configModel{}, err
 	}
 
 	return config, nil
+}
+
+func getConfigPath() string {
+	// if SHADES_CONFIG is defined, use that
+	envValue := os.Getenv("SHADES_CONFIG")
+	if envValue != "" {
+		return envValue
+	}
+
+	return os.Getenv("HOME") + "/.config/shades/shades.yaml"
 }
