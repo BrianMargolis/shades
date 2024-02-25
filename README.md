@@ -62,8 +62,10 @@ You can get a list of all available clients with the `-l` flag.
 shades -l 
 ```
 
-The `shades.nvim` plugin enables theming Neovim, and provides a second example
-of implementing a `shades` client. See more about implementing your own clients in the next section.
+The [`shades.nvim`](https://github.com/BrianMargolis/shades.nvim) plugin
+enables theming Neovim, and provides a second example of implementing a
+`shades` client. See more about implementing your own clients in the next
+section.
 
 ### Step 3/3: daemonizing (optional but highly recommended)
 
@@ -119,7 +121,7 @@ shutdown.
 
 
 ## TODOs
-- [ ] turn the neovim stuff into a proper plugin
+- [x] turn the neovim stuff into a proper plugin
 - [x] basic configuration - stuff like paths
 - [x] advanced behavioral configuraton
 - [x] launchd setup script - want it to be nice and interactive, and ideally
