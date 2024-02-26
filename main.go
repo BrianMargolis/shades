@@ -12,6 +12,7 @@ import (
 var CLIENTS = map[string]client.Client{
 	"alacritty":     client.AlacrittyClient{},
 	"bat":           client.BatClient{},
+	"btop":          client.BtopClient{},
 	"debug":         client.DebugClient{},
 	"fzf":           client.FZFClient{},
 	"mac":           client.MacClient{},

@@ -28,11 +28,24 @@ func (a AlacrittyClient) set(config map[string]string) func(string) error {
 			themePath = config["dark-theme-path"]
 		}
 
-		return a.replaceAtShadesTag(alacrittyConfigPath, themePath)
+		n, err := ReplaceAtTag(
+			alacrittyConfigPath,
+			fmt.Sprintf("\"%s\", # shades-replace", themePath),
+			"# shades-replace",
+		)
+		if err != nil {
+			return errors.Wrap(err, "replacing alacritty theme path")
+		}
+
+		if n == 0 {
+			fmt.Println("WARNING: no '# shades-replace' tag found in alacritty config: " + alacrittyConfigPath)
+		}
+
+		return nil
 	}
 }
 
-func (a AlacrittyClient) replaceAtShadesTag(filePath string, replacement string) error {
+func (a AlacrittyClient) replaceAtShadesTag(filePath string, replacement string, tag string) error {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return errors.Wrap(err, "opening file")
@@ -52,7 +65,7 @@ func (a AlacrittyClient) replaceAtShadesTag(filePath string, replacement string)
 	for {
 		line, err := reader.ReadString('\n')
 
-		if strings.Contains(line, "# shades-replace") {
+		if strings.Contains(line, tag) {
 			didReplacement = true
 			if _, err := writer.WriteString("\"" + replacement + "\"," + " # shades-replace" + "\n"); err != nil {
 				return errors.Wrap(err, "writing replacement line")

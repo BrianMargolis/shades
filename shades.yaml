@@ -27,6 +27,10 @@ client:
     dark-window-status-current-format: "#{?#{==:#{session_windows},1},,#[fg=#2d353b,bg=#a7c080] *#W* }"
     dark-status-left: "#[fg=#2d353b,bg=#a7c080] #(cd #{pane_current_path}; pwd) #[fg=#a7c080,bg=#2d353b]"
     dark-status-right: "#[fg=#2d353b,bg=#a7c080]  #(cd #{pane_current_path}; git branch --show-current) "
+  btop:
+    light-theme-path: "/Users/brian/.config/btop/themes/everforest-light-medium.theme"
+    dark-theme-path: "/Users/brian/.config/btop/themes/everforest-dark-medium.theme"
+    btop-config-path: "/Users/brian/.config/btop/btop.conf"
 
 
 
