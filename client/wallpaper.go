@@ -16,6 +16,8 @@ func (m MacWallpaperClient) makeSetter(config map[string]string) func(string) er
 			wallpaperPath = config["light"]
 		}
 
+		wallpaperPath = ExpandTilde(wallpaperPath)
+
 		script := `tell application "Finder" to set desktop picture to POSIX file "` + wallpaperPath + `"`
 		fmt.Println(script)
 		_, err := RunApplescript(script)

@@ -18,7 +18,7 @@ func (a AlacrittyClient) Start(socket string, config map[string]string) error {
 
 func (a AlacrittyClient) set(config map[string]string) func(string) error {
 	return func(theme string) error {
-		alacrittyConfigPath := config["alacritty-config-path"]
+		alacrittyConfigPath := ExpandTilde(config["alacritty-config-path"])
 		if alacrittyConfigPath == "" {
 			alacrittyConfigPath = os.Getenv("HOME") + "/.config/alacritty/alacritty.toml"
 		}

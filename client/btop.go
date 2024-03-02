@@ -13,9 +13,9 @@ type BtopClient struct {
 }
 
 func (b BtopClient) Start(socket string, config map[string]string) error {
-	b.btopConfigPath = config["btop-config-path"]
-	b.lightThemePath = config["light-theme-path"]
-	b.darkThemePath = config["dark-theme-path"]
+	b.btopConfigPath = ExpandTilde(config["btop-config-path"])
+	b.lightThemePath = ExpandTilde(config["light-theme-path"])
+	b.darkThemePath = ExpandTilde(config["dark-theme-path"])
 
 	return SubscribeToSocket(b.set)(socket)
 }
