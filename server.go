@@ -14,7 +14,7 @@ import (
 	"syscall"
 )
 
-const MAX_CLIENTS = 10
+const MAX_CLIENTS = 100
 
 func startServer(socketPath string) {
 	socket, err := net.Listen("unix", socketPath)
