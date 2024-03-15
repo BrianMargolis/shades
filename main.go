@@ -45,9 +45,9 @@ const socketPath = "/tmp/theme-change.sock"
 
 func main() {
 	args := os.Args[1:]
-	if len(args) == 0 {
-		fmt.Println(usage)
-		os.Exit(1)
+	mode := "toggle"
+	if len(args) > 0 {
+		mode = args[0]
 	}
 
 	config, err := getConfig()
@@ -55,7 +55,6 @@ func main() {
 		panic(err)
 	}
 
-	mode := args[0]
 	switch mode {
 	case "-h", "--help":
 		fmt.Println(usage)
