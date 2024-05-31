@@ -1,36 +1,210 @@
 socket-path: "/tmp/theme-change.sock"
+defaultLightTheme: "catppuccin;latte"
+defaultDarkTheme: "catppuccin;mocha"
 client:
   mac-wallpaper:
     dark: "/Users/brian/Pictures/loupe/loupe-mono-dark.heic"
     light: "/Users/brian/Pictures/loupe/loupe-mono-light.heic"
   alacritty:
     alacritty-config-path: "/Users/brian/.config/alacritty/alacritty.toml"
-    light-theme-path: "/Users/brian/.config/alacritty/themes/themes/everforest_light.toml"
-    dark-theme-path: "/Users/brian/.config/alacritty/themes/themes/everforest_dark.toml"
-  bat:
-    dark-theme: "everforest-dark"
-    light-theme: "everforest-light"
+    theme-path: "/Users/brian/.config/alacritty/themes/themes"
   fzf:
-  # generate these with https://vitormv.github.io/fzf-themes/
-    dark-theme: '--color=fg:#d3c6aa,fg+:#d0d0d0,bg:#232a2e,bg+:#232a2e --color=hl:#425047,hl+:#5fd7ff,info:#dbbc7f,marker:#d699b6 --color=prompt:#7fbbb3,spinner:#a7c080,pointer:#a7c080,header:#e69875 --color=border:#232a2e,label:#9da9a0,query:#d3c6aa --border="rounded" --border-label="" --preview-window="border-rounded" --prompt="> " --marker=">" --pointer="◆" --separator="─" --scrollbar="│"'
-    light-theme: '--color=fg:#5c6a72,fg+:#5c6a72,bg:#fdf6e3,bg+:#fdf6e3 --color=hl:#5f87af,hl+:#5fd7ff,info:#dfa000,marker:#df69ba --color=prompt:#3a94c5,spinner:#8da101,pointer:#8da101,header:#f57d25 --color=border:#fdf6e3,label:#aeaeae,query:#d9d9d9 --border="rounded" --border-label="" --preview-window="border-rounded" --prompt="> " --marker=">" --pointer="◆" --separator="─" --scrollbar="│"'
+    # https://vitormv.github.io/fzf-themes/
+    theme: >
+      --color=fg:{BLUE},fg+:{AQUA},bg:{BG0},bg+:{BG0} 
+      --color=hl:#5f87af,hl+:#5fd7ff,info:{GREEN},marker:{FG} 
+      --color=prompt:{PURPLE},spinner:{BLUE},pointer:{GREEN},header:{YELLOW},label:#aeaeae,query:{GREEN}
+      --border="rounded" 
+      --border-label="" 
+      --preview-window="border-rounded" 
+      --prompt="> " --marker=">" --pointer="◆" --separator="─" --scrollbar="│"
   tmux:
-    light-status-bg: "#fdf6e3"
-    light-status-fg: "#5c6a72"
-    light-window-status-format: "#{?#{==:#{session_windows},1},,#[fg=#fdf6e3,bg=#8da101] #W }"
-    light-window-status-current-format: "#{?#{==:#{session_windows},1},,#[fg=#fdf6e3,bg=#8da101] *#W* }"
-    light-status-left: "#[fg=#fdf6e3,bg=#8da101] #(cd #{pane_current_path}; pwd) #[fg=#8da101,bg=#fdf6e3]"
-    light-status-right: "#[fg=#fdf6e3,bg=#8da101]  #(cd #{pane_current_path}; git branch --show-current) "
-    dark-status-bg: "#2d353b"
-    dark-status-fg: "#d3c6aa"
-    dark-window-status-format: "#{?#{==:#{session_windows},1},,#[fg=#2d353b,bg=#a7c080] #W }"
-    dark-window-status-current-format: "#{?#{==:#{session_windows},1},,#[fg=#2d353b,bg=#a7c080] *#W* }"
-    dark-status-left: "#[fg=#2d353b,bg=#a7c080] #(cd #{pane_current_path}; pwd) #[fg=#a7c080,bg=#2d353b]"
-    dark-status-right: "#[fg=#2d353b,bg=#a7c080]  #(cd #{pane_current_path}; git branch --show-current) "
+    status-bg: "{BG0}"
+    status-fg: "{RED}"
+    window-status-format: "#{?#{==:#{session_windows},1},,#[fg={BG0},bg={PURPLE}] #I. #W #[bg=#fdf6e3]}"
+    window-status-current-format: "#{?#{==:#{session_windows},1},,#[fg={BG0},bg={GREEN}] #I. *#W* #[bg=#fdf6e3]}"
+    status-left: "#[fg={BG0},bg={BLUE}] #S #[bg=#fdf6e3]"
+    status-right: >
+      #[fg={BG0},bg={RED}] #(date +"%I:%M%p" | tr '[:upper:]' '[:lower:]' | sed 's/^0//')
+      #[bg=#fdf6e3]#[fg={BG0},bg={PURPLE})
+      #[bg=#fdf6e3]#[fg={BG0},bg={ORANGE}] #(cd #{pane_current_path}; dirs) 
   btop:
     light-theme-path: "/Users/brian/.config/btop/themes/everforest-light-medium.theme"
+    theme-path: "/Users/brian/.config/btop/themes"
     dark-theme-path: "/Users/brian/.config/btop/themes/everforest-dark-medium.theme"
     btop-config-path: "/Users/brian/.config/btop/btop.conf"
-
-
-
+themes:
+  everforest:
+    name: "everforest"
+    variants: 
+      dark-hard:
+        light: false
+        colors:
+          BGDIM: "#1E2326"
+          BG0: "#272E33"
+          BG1: "#2E383C"
+          BG2: "#374145"
+          BG3: "#414B50"
+          BG4: "#495156"
+          BG5: "#4F5B58"
+          RED: "#D3C6AA"
+          ORANGE: "#E67E80"
+          YELLOW: "#E69875"
+          GREEN: "#DBBC7F"
+          BLUE: "#A7C080"
+          AQUA: "#83C092"
+          PURPLE: "#7FBBB3"
+          FG: "#D699B6"
+          GRAY1: "#A7C080"
+          GRAY2: "#D3C6AA"
+          GRAY3: "#E67E80"
+      dark-medium:
+        light: false
+        colors:
+          BGDIM: "#232A2E"
+          BG0: "#2D353B"
+          BG1: "#343F44"
+          BG2: "#3D484D"
+          BG3: "#475258"
+          BG4: "#4F585E"
+          BG5: "#56635f"
+          RED: "#D3C6AA"
+          ORANGE: "#E67E80"
+          YELLOW: "#E69875"
+          GREEN: "#DBBC7F"
+          BLUE: "#A7C080"
+          AQUA: "#83C092"
+          PURPLE: "#7FBBB3"
+          FG: "#D699B6"
+          GRAY1: "#A7C080"
+          GRAY2: "#D3C6AA"
+          GRAY3: "#E67E80"
+      dark-low:
+        light: false
+        colors:
+          BGDIM: "#293136"
+          BG0: "#333C43"
+          BG1: "#3A464C"
+          BG2: "#434F55"
+          BG3: "#4D5960"
+          BG4: "#555F66"
+          BG5: "#5D6B66"
+          RED: "#D3C6AA"
+          ORANGE: "#E67E80"
+          YELLOW: "#E69875"
+          GREEN: "#DBBC7F"
+          BLUE: "#A7C080"
+          AQUA: "#83C092"
+          PURPLE: "#7FBBB3"
+          FG: "#D699B6"
+          GRAY1: "#A7C080"
+          GRAY2: "#D3C6AA"
+          GRAY3: "#E67E80"
+      light-hard:
+        light: true
+        colors:
+          BGDIM: "#F2EFDF"
+          BG0: "#FFFBEF"
+          BG1: "#F8F5E4"
+          BG2: "#F2EFDF"
+          BG3: "#EDEADA"
+          BG4: "#E8E5D5"
+          BG5: "#BEC5B2"
+          RED: "#5C6A72"
+          ORANGE: "#F85552"
+          YELLOW: "#F57D26"
+          GREEN: "#DFA000"
+          BLUE: "#8DA101"
+          AQUA: "#35A77C"
+          PURPLE: "#3A94C5"
+          FG: "#DF69BA"
+          GRAY1: "#93B259"
+          GRAY2: "#708089"
+          GRAY3: "#E66868"
+      light-medium:
+        light: true
+        colors:
+          BGDIM: "#EFEBD4"
+          BG0: "#FDF6E3"
+          BG1: "#F4F0D9"
+          BG2: "#EFEBD4"
+          BG3: "#E6E2CC"
+          BG4: "#E0DCC7"
+          BG5: "#BDC3AF"
+          RED: "#5C6A72"
+          ORANGE: "#F85552"
+          YELLOW: "#F57D26"
+          GREEN: "#DFA000"
+          BLUE: "#8DA101"
+          AQUA: "#35A77C"
+          PURPLE: "#3A94C5"
+          FG: "#DF69BA"
+          GRAY1: "#93B259"
+          GRAY2: "#708089"
+          GRAY3: "#E66868"
+      light-low:
+        light: true
+        colors:
+          BGDIM: "#E5DFC5"
+          BG0: "#F3EAD3"
+          BG1: "#EAE4CA"
+          BG2: "#E5DFC5"
+          BG3: "#DDD8BE"
+          BG4: "#D8D3BA"
+          BG5: "#B9C0AB"
+          RED: "#5C6A72"
+          ORANGE: "#F85552"
+          YELLOW: "#F57D26"
+          GREEN: "#DFA000"
+          BLUE: "#8DA101"
+          AQUA: "#35A77C"
+          PURPLE: "#3A94C5"
+          FG: "#DF69BA"
+          GRAY1: "#93B259"
+          GRAY2: "#708089"
+          GRAY3: "#E66868"
+  catppuccin:
+    name: "catppuccin"
+    variants: 
+      latte:
+        light: true
+        colors:
+          BGDIM: "#eff1f5"  # base
+          BG0: "#eff1f5"    # base
+          BG1: "#bcc0cc"    # surface 1
+          BG2: "#acb0be"    # surface 2
+          BG3: "#9ca0b0"    # overlay 0 
+          BG4: "#8c8fa1"    # overlay 1 
+          BG5: "#7c7f93"    # overlay 2
+          RED: "#d20f39"
+          ORANGE: "#fe640b"
+          YELLOW: "#df8e1d"
+          GREEN: "#40a02b"
+          BLUE: "#1e66f5"
+          AQUA: "#04a5e5"
+          PURPLE: "#8839ef"
+          FG: "#4c4f69"     # text
+          GRAY1: "#ccd0da"  # surface 0
+          GRAY2: "#bcc0cc"  # surface 1
+          GRAY3: "#acb0be"  # surface 2
+      mocha:
+        light: false
+        colors:
+          BGDIM: "#1e1e2e"  # base
+          BG0: "#1e1e2e"    # base
+          BG1: "#45475a"    # surface 1
+          BG2: "#585b70"    # surface 2
+          BG3: "#6c7086"    # overlay 0 
+          BG4: "#7f849c"    # overlay 1 
+          BG5: "#9899b2"    # overlay 2
+          RED: "#f38ba8"
+          ORANGE: "#fab387"
+          YELLOW: "#f9e2af"
+          GREEN: "#a6e3a1"
+          BLUE: "#89b4fa"
+          AQUA: "#89dceb"
+          PURPLE: "#cba6f7"
+          FG: "#cdd6f4"     # text
+          GRAY1: "#313244"  # surface 0
+          GRAY2: "#45475a"  # surface 1
+          GRAY3: "#585b70"  # surface 2

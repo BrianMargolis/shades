@@ -7,7 +7,11 @@ import (
 
 type DebugClient struct{}
 
-func (d DebugClient) Start(socket string, config map[string]string) error {
+func NewDebugClient(_ map[string]string) Client {
+	return DebugClient{}
+}
+
+func (d DebugClient) Start(socket string) error {
 	fmt.Println("Starting debug client")
 	read, write, err := SocketAsChannel(socket)
 	if err != nil {

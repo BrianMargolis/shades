@@ -5,19 +5,17 @@ import (
 	"fmt"
 	"os"
 	"sync"
-
-	"gopkg.in/yaml.v2"
 )
 
-var CLIENTS = map[string]client.Client{
-	"alacritty":     client.AlacrittyClient{},
-	"bat":           client.BatClient{},
-	"btop":          client.BtopClient{},
-	"debug":         client.DebugClient{},
-	"fzf":           client.FZFClient{},
-	"mac":           client.MacClient{},
-	"mac-wallpaper": client.MacWallpaperClient{},
-	"tmux":          client.TMUXClient{},
+var CLIENTS = map[string]client.ClientConstructor{
+	"alacritty":     client.NewAlacrittyClient,
+	"bat":           client.NewBatClient,
+	"btop":          client.NewBtopClient,
+	"debug":         client.NewDebugClient,
+	"fzf":           client.NewFZFClient,
+	"mac":           client.NewMacClient,
+	"mac-wallpaper": client.NewMacWallpaperClient,
+	"tmux":          client.NewTMUXClient,
 }
 
 const usage = `shades usage: 
@@ -50,7 +48,7 @@ func main() {
 		mode = args[0]
 	}
 
-	config, err := getConfig()
+	config, err := client.GetConfig()
 	if err != nil {
 		panic(err)
 	}
@@ -68,12 +66,16 @@ func main() {
 			go func(clientName string) {
 				defer wg.Done()
 
-				client, ok := CLIENTS[clientName]
-				if ok {
-					err := client.Start(socketPath, config.Client[clientName])
-					panic(err)
-				} else {
+				clientConstructor, ok := CLIENTS[clientName]
+				if !ok {
 					fmt.Printf("no such client %s, ignoring\n", clientName)
+				}
+
+				err := clientConstructor(
+					config.Client[clientName],
+				).Start(socketPath)
+				if err != nil {
+					panic(err)
 				}
 			}(clientName)
 		}
@@ -85,53 +87,18 @@ func main() {
 			fmt.Printf("\t%s", client)
 		}
 	case "-s":
-		startServer(socketPath)
-	case "dark", "d", "light", "l":
-		// expando
-		theme := args[0]
-		if theme == "d" {
-			theme = "dark"
-		} else if theme == "l" {
-			theme = "light"
-		}
-
-		changer := client.ChangerClient{Theme: theme}
+		NewServer(config.DefaultDarkTheme, config.DefaultLightTheme).Start(socketPath)
+	case "dark", "d":
+		changer := client.ChangerClient{Theme: config.DefaultDarkTheme}
+		changer.Start(socketPath)
+	case "light", "l":
+		changer := client.ChangerClient{Theme: config.DefaultLightTheme}
 		changer.Start(socketPath)
 	case "toggle", "t":
-		toggler := client.TogglerClient{}
+		toggler := client.TogglerClient{
+			DarkTheme:  config.DefaultDarkTheme,
+			LightTheme: config.DefaultLightTheme,
+		}
 		toggler.Start(socketPath)
 	}
-}
-
-type configModel struct {
-	SocketPath string                       `yaml:"socket-path"`
-	Client     map[string]map[string]string `yaml:"client"`
-}
-
-func getConfig() (configModel, error) {
-	f, err := os.Open(getConfigPath())
-	if err != nil {
-		return configModel{}, err
-	}
-
-	defer f.Close()
-
-	config := configModel{}
-	decoder := yaml.NewDecoder(f)
-	err = decoder.Decode(&config)
-	if err != nil {
-		return configModel{}, err
-	}
-
-	return config, nil
-}
-
-func getConfigPath() string {
-	// if SHADES_CONFIG is defined, use that
-	envValue := os.Getenv("SHADES_CONFIG")
-	if envValue != "" {
-		return envValue
-	}
-
-	return os.Getenv("HOME") + "/.config/shades/shades.yaml"
 }

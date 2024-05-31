@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -84,4 +85,24 @@ func ExpandTilde(path string) string {
 		return home + path[1:]
 	}
 	return path
+}
+
+func GetThemeAndVariant(themeAndVariant string) (string, string, error) {
+	parts := strings.Split(themeAndVariant, ";")
+
+	if len(parts) != 2 {
+		return "", "", errors.New("invalid theme and variant")
+	}
+
+	return parts[0], parts[1], nil
+}
+
+func DoTemplate(
+	template string,
+	variant ThemeVariant,
+) string {
+	for color, value := range variant.Colors {
+		template = strings.ReplaceAll(template, fmt.Sprintf("{%s}", color), value)
+	}
+	return template
 }

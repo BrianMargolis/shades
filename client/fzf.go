@@ -8,24 +8,22 @@ import (
 )
 
 type FZFClient struct {
-	darkTheme  string
-	lightTheme string
+	themeTemplate string
 }
 
-func (b FZFClient) Start(socketName string, config map[string]string) error {
-	b.darkTheme = config["dark-theme"]
-	b.lightTheme = config["light-theme"]
+func NewFZFClient(config map[string]string) Client {
+	return FZFClient{
+		themeTemplate: config["theme"],
+	}
+}
+
+func (b FZFClient) Start(socketName string) error {
 	return SubscribeToSocket(b.set)(socketName)
 }
 
-func (b FZFClient) set(theme string) error {
-	// generate these with https://vitormv.github.io/fzf-themes/
-	fzfTheme := b.darkTheme
-	if theme == "light" {
-		fzfTheme = b.lightTheme
-	}
+func (b FZFClient) set(theme ThemeVariant) error {
+	fzfTheme := DoTemplate(b.themeTemplate, theme)
 
-	// set the theme for fzf
 	cmd := fmt.Sprintf("set -Ux FZF_DEFAULT_OPTS '%s'", fzfTheme)
 	err := exec.Command("fish", "-c", cmd).Run()
 	if err != nil {

@@ -33,7 +33,10 @@ func (c ChangerClient) Start(socketName string) error {
 }
 
 // TogglerClient is built on top of a ChangerClient and just inverts the theme.
-type TogglerClient struct{}
+type TogglerClient struct {
+	DarkTheme  string
+	LightTheme string
+}
 
 func (c TogglerClient) Start(socketName string) error {
 	currentTheme, err := c.getCurrentTheme()
@@ -41,9 +44,9 @@ func (c TogglerClient) Start(socketName string) error {
 		return errors.Wrap(err, "could not get current theme")
 	}
 
-	newTheme := "light"
-	if currentTheme == "light" {
-		newTheme = "dark"
+	newTheme := c.LightTheme
+	if currentTheme == c.LightTheme {
+		newTheme = c.DarkTheme
 	}
 
 	changerClient := ChangerClient{Theme: newTheme}
@@ -59,8 +62,8 @@ func (c TogglerClient) getCurrentTheme() (string, error) {
 	}
 
 	if strings.TrimSpace(string(output)) == "true" {
-		return "dark", nil
+		return c.DarkTheme, nil
 	} else {
-		return "light", nil
+		return c.DarkTheme, nil
 	}
 }

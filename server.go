@@ -16,7 +16,23 @@ import (
 
 const MAX_CLIENTS = 100
 
-func startServer(socketPath string) {
+type Server interface {
+	Start(socketPath string) error
+}
+
+type server struct {
+	defaultDarkTheme  string
+	defaultLightTheme string
+}
+
+func NewServer(defaultDarkTheme, defaultLightTheme string) Server {
+	return &server{
+		defaultDarkTheme:  defaultDarkTheme,
+		defaultLightTheme: defaultLightTheme,
+	}
+}
+
+func (s *server) Start(socketPath string) error {
 	socket, err := net.Listen("unix", socketPath)
 	if err != nil {
 		fmt.Println("Error listening: ", err)
@@ -44,11 +60,11 @@ func startServer(socketPath string) {
 			panic("Too many clients!")
 		}
 
-		go talkToClient(conn, &clients, &clientMutex)
+		go s.talkToClient(conn, &clients, &clientMutex)
 	}
 }
 
-func talkToClient(conn net.Conn, clients *[]net.Conn, mutex *sync.Mutex) {
+func (s *server) talkToClient(conn net.Conn, clients *[]net.Conn, mutex *sync.Mutex) {
 	fmt.Println("new client connected: ", conn.RemoteAddr())
 	defer conn.Close()
 
@@ -84,9 +100,9 @@ func talkToClient(conn net.Conn, clients *[]net.Conn, mutex *sync.Mutex) {
 				continue
 			}
 
-			theme := "light"
+			theme := s.defaultLightTheme
 			if currentlyDark {
-				theme = "dark"
+				theme = s.defaultDarkTheme
 			}
 
 			whisper(mutex, conn, protocol.Set(theme))

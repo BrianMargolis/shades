@@ -1,19 +1,21 @@
 package client
 
-type MacClient struct{}
+import "strconv"
 
-func (m MacClient) Start(socket string, config map[string]string) error {
+type MacClient struct {
+}
+
+func NewMacClient(_ map[string]string) Client {
+	return MacClient{}
+}
+
+func (m MacClient) Start(socket string) error {
 	return SubscribeToSocket(m.set)(socket)
 }
 
-func (m MacClient) set(theme string) error {
-	shouldBeDark := "true"
-	if theme == "light" {
-		shouldBeDark = "false"
-	}
-
+func (m MacClient) set(theme ThemeVariant) error {
 	// the single line of AppleScript that I know:
-	script := `tell application "System Events" to tell appearance preferences to set dark mode to ` + shouldBeDark
+	script := `tell application "System Events" to tell appearance preferences to set dark mode to ` + strconv.FormatBool(!theme.Light)
 
 	_, err := RunApplescript(script)
 	return err

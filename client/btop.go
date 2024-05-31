@@ -8,23 +8,27 @@ import (
 
 type BtopClient struct {
 	btopConfigPath string
-	lightThemePath string
-	darkThemePath  string
+	themePath      string
 }
 
-func (b BtopClient) Start(socket string, config map[string]string) error {
-	b.btopConfigPath = ExpandTilde(config["btop-config-path"])
-	b.lightThemePath = ExpandTilde(config["light-theme-path"])
-	b.darkThemePath = ExpandTilde(config["dark-theme-path"])
+func NewBtopClient(config map[string]string) Client {
+	btopConfigPath := ExpandTilde(config["btop-config-path"])
+	themePath := ExpandTilde(config["theme-path"])
+	return BtopClient{
+		btopConfigPath: btopConfigPath,
+		themePath:      themePath,
+	}
+}
 
+func (b BtopClient) Start(
+	socket string,
+) error {
 	return SubscribeToSocket(b.set)(socket)
 }
 
-func (b BtopClient) set(theme string) error {
-	configLine := "color_theme = " + b.darkThemePath
-	if theme == "light" {
-		configLine = "color_theme = " + b.lightThemePath
-	}
+func (b BtopClient) set(theme ThemeVariant) error {
+	path := fmt.Sprintf("%s/%s-%s.theme", b.themePath, theme.ThemeName, theme.VariantName)
+	configLine := "color_theme = " + path
 
 	n, err := ReplaceAtTag(b.btopConfigPath, configLine, "color_theme = ")
 	if err != nil {
@@ -37,5 +41,3 @@ func (b BtopClient) set(theme string) error {
 
 	return nil
 }
-
-// color_theme = "/Users/brian/.config/btop/themes/everforest-light-medium.theme"

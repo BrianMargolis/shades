@@ -3,14 +3,15 @@ package client
 import (
 	"brianmargolis/shades/protocol"
 	"bufio"
-	"fmt"
 	"net"
 	"strings"
 )
 
 type Client interface {
-	Start(socket string, config map[string]string) error
+	Start(socket string) error
 }
+
+type ClientConstructor func(config map[string]string) Client
 
 // SocketAsChannel takes a socket path and opens up a channel on top of it.
 func SocketAsChannel(socket string) (chan string, chan string, error) {
@@ -53,8 +54,13 @@ func SocketAsChannel(socket string) (chan string, chan string, error) {
 // SubscribeToSocket is a simple way to build a client if you don't need the
 // propose or get functionalities.
 func SubscribeToSocket(
-	setter func(theme string) error,
-) func(socket string) error {
+	setter func(theme ThemeVariant) error,
+) func(string) error {
+	config, err := GetConfig()
+	if err != nil {
+		panic(err)
+	}
+
 	return func(socketName string) error {
 		read, write, err := SocketAsChannel(socketName)
 		if err != nil {
@@ -70,11 +76,13 @@ func SubscribeToSocket(
 			}
 
 			if verb == "set" {
-				theme := strings.TrimSpace(noun)
-
-				err = setter(theme)
+				themeAndVariant := strings.TrimSpace(noun)
+				themeVariant, err := config.Themes.GetVariant(themeAndVariant)
 				if err != nil {
-					fmt.Println("ERROR: ", err)
+					return err
+				}
+
+				if err = setter(themeVariant); err != nil {
 					return err
 				}
 			}
