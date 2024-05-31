@@ -212,13 +212,13 @@ func generatePlistContent(label, command string, args []string, runAtLoad bool) 
 								<key>RunAtLoad</key>
 								<%s/>
 								<key>StandardOutPath</key>
-								<string>/usr/local/var/log/%s-out.log</string>
+								<string>/tmp/%s-out.log</string>
 								<key>StandardErrorPath</key>
-								<string>/usr/local/var/log/%s-error.log</string>
+								<string>/tmp/%s-error.log</string>
 								<key>EnvironmentVariables</key>
 								<dict>
 									<key>PATH</key>
-									<string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:%s/bin:/usr/bin/osascript</string>
+										<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:%s/bin:/usr/bin/osascript</string>
 								</dict>
 							</dict>
 						</plist>`
