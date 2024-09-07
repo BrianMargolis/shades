@@ -3,6 +3,8 @@ package client
 import (
 	"fmt"
 	"os/exec"
+
+	"github.com/pkg/errors"
 )
 
 type TMUXClient struct {
@@ -39,10 +41,22 @@ func (t TMUXClient) set(theme ThemeVariant) error {
 }
 
 func (t TMUXClient) setTMUXOption(optionName, value string) error {
-	// TODO tmux path should be configurable
-	_, err := exec.Command("/opt/homebrew/bin/tmux", "set-option", "-g", optionName, value).Output()
+	tmuxPath, err := t.getTMUXExecutablePath()
+	if err != nil {
+		return err
+	}
+
+	_, err = exec.Command(tmuxPath, "set-option", "-g", optionName, value).Output()
 	if err != nil {
 		fmt.Printf("ERROR setting %s: %s", optionName, err.Error())
 	}
 	return err
+}
+
+func (t TMUXClient) getTMUXExecutablePath() (string, error) {
+	path, err := exec.LookPath("tmux")
+	if err != nil {
+		return "", errors.Wrap(err, "tmux executable not found")
+	}
+	return path, nil
 }
