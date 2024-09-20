@@ -12,12 +12,14 @@ type ThemeVariant struct {
 // EVERFOREST
 type ThemeEverforestVariant string
 
-const ThemeEverforestVariantDarkHard ThemeEverforestVariant = "dark-hard"
-const ThemeEverforestVariantDarkMedium ThemeEverforestVariant = "dark-medium"
-const ThemeEverforestVariantDarkSoft ThemeEverforestVariant = "dark-low"
-const ThemeEverforestVariantLightHard ThemeEverforestVariant = "light-hard"
-const ThemeEverforestVariantLightMedium ThemeEverforestVariant = "light-medium"
-const ThemeEverforestVariantLightSoft ThemeEverforestVariant = "light-low"
+const (
+	ThemeEverforestVariantDarkHard    ThemeEverforestVariant = "dark-hard"
+	ThemeEverforestVariantDarkMedium  ThemeEverforestVariant = "dark-medium"
+	ThemeEverforestVariantDarkSoft    ThemeEverforestVariant = "dark-low"
+	ThemeEverforestVariantLightHard   ThemeEverforestVariant = "light-hard"
+	ThemeEverforestVariantLightMedium ThemeEverforestVariant = "light-medium"
+	ThemeEverforestVariantLightSoft   ThemeEverforestVariant = "light-low"
+)
 
 type ThemeEverforest struct {
 	Name     string                                  `yaml:"name"`
@@ -27,17 +29,33 @@ type ThemeEverforest struct {
 // CATPPUCCIN
 type ThemeCatppuccinVariant string
 
-const ThemeCatppuccinVariantLatte ThemeCatppuccinVariant = "latte"
-const ThemeCatppuccinVariantMocha ThemeCatppuccinVariant = "mocha"
+const (
+	ThemeCatppuccinVariantLatte ThemeCatppuccinVariant = "latte"
+	ThemeCatppuccinVariantMocha ThemeCatppuccinVariant = "mocha"
+)
 
 type ThemeCatppuccin struct {
 	Name     string                                  `yaml:"name"`
 	Variants map[ThemeCatppuccinVariant]ThemeVariant `yaml:"variants"`
 }
 
+// GRUVBOX
+type ThemeGruvboxVariant string
+
+const (
+	ThemeGruvboxVariantLight ThemeGruvboxVariant = "light"
+	ThemeGruvboxVariantDark  ThemeGruvboxVariant = "dark"
+)
+
+type ThemeGruvbox struct {
+	Name     string                               `yaml:"name"`
+	Variants map[ThemeGruvboxVariant]ThemeVariant `yaml:"variants"`
+}
+
 type Themes struct {
 	Everforest ThemeEverforest `yaml:"everforest"`
 	Catppuccin ThemeCatppuccin `yaml:"catppuccin"`
+	Gruvbox    ThemeGruvbox    `yaml:"gruvbox"`
 }
 
 func (t Themes) GetVariant(themeAndVariant string) (ThemeVariant, error) {
@@ -63,6 +81,8 @@ func (t Themes) getVariant(theme, variant string) (ThemeVariant, error) {
 		return t.Everforest.Variants[ThemeEverforestVariant(variant)], nil
 	case "catppuccin":
 		return t.Catppuccin.Variants[ThemeCatppuccinVariant(variant)], nil
+	case "gruvbox":
+		return t.Gruvbox.Variants[ThemeGruvboxVariant(variant)], nil
 	}
 
 	return ThemeVariant{}, errors.New("unknown theme or variant")
@@ -70,21 +90,23 @@ func (t Themes) getVariant(theme, variant string) (ThemeVariant, error) {
 
 type Color string
 
-const ColorBGDim Color = "BGDIM"
-const ColorBG0 Color = "BG0"
-const ColorBG1 Color = "BG1"
-const ColorBG2 Color = "BG2"
-const ColorBG3 Color = "BG3"
-const ColorBG4 Color = "BG4"
-const ColorBG5 Color = "BG5"
-const ColorRed Color = "RED"
-const ColorOrange Color = "ORANGE"
-const ColorYellow Color = "YELLOW"
-const ColorGreen Color = "GREEN"
-const ColorBlue Color = "BLUE"
-const ColorAqua Color = "AQUA"
-const ColorPurple Color = "PURPLE"
-const ColorFG Color = "FG"
-const ColorGray1 Color = "GRAY1"
-const ColorGray2 Color = "GRAY2"
-const ColorGray3 Color = "GRAY3"
+const (
+	ColorBGDim  Color = "BGDIM"
+	ColorBG0    Color = "BG0"
+	ColorBG1    Color = "BG1"
+	ColorBG2    Color = "BG2"
+	ColorBG3    Color = "BG3"
+	ColorBG4    Color = "BG4"
+	ColorBG5    Color = "BG5"
+	ColorRed    Color = "RED"
+	ColorOrange Color = "ORANGE"
+	ColorYellow Color = "YELLOW"
+	ColorGreen  Color = "GREEN"
+	ColorBlue   Color = "BLUE"
+	ColorAqua   Color = "AQUA"
+	ColorPurple Color = "PURPLE"
+	ColorFG     Color = "FG"
+	ColorGray1  Color = "GRAY1"
+	ColorGray2  Color = "GRAY2"
+	ColorGray3  Color = "GRAY3"
+)
