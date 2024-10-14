@@ -11,7 +11,7 @@ type Client interface {
 	Start(socket string) error
 }
 
-type ClientConstructor func(config map[string]string) Client
+type ClientConstructor func() Client
 
 // SocketAsChannel takes a socket path and opens up a channel on top of it.
 func SocketAsChannel(socket string) (chan string, chan string, error) {

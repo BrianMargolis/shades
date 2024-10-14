@@ -7,7 +7,7 @@ import (
 
 type BatClient struct{}
 
-func NewBatClient(_ map[string]string) Client {
+func NewBatClient() Client {
 	return BatClient{}
 }
 

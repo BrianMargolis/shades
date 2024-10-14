@@ -7,7 +7,7 @@ import (
 
 type DebugClient struct{}
 
-func NewDebugClient(_ map[string]string) Client {
+func NewDebugClient() Client {
 	return DebugClient{}
 }
 

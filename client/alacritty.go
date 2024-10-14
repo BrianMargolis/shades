@@ -8,12 +8,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-type AlacrittyClient struct {
-	config map[string]string
-}
+type AlacrittyClient struct{}
 
-func NewAlacrittyClient(config map[string]string) Client {
-	return AlacrittyClient{config: config}
+func NewAlacrittyClient() Client {
+	return AlacrittyClient{}
 }
 
 func (a AlacrittyClient) Start(socket string) error {
@@ -21,15 +19,20 @@ func (a AlacrittyClient) Start(socket string) error {
 }
 
 func (a AlacrittyClient) set(theme ThemeVariant) error {
-	alacrittyConfigPath := ExpandTilde(a.config["alacritty-config-path"])
+	config, err := GetConfig()
+	if err != nil {
+		return err
+	}
+
+	alacrittyConfigPath := ExpandTilde(config.Client["alacritty"]["alacritty-config-path"])
 	if alacrittyConfigPath == "" {
 		alacrittyConfigPath = os.Getenv("HOME") + "/.config/alacritty/alacritty.toml"
 	}
-	alacrittyMainConfigPath := ExpandTilde(a.config["alacritty-main-config-path"])
+	alacrittyMainConfigPath := ExpandTilde(config.Client["alacritty"]["alacritty-main-config-path"])
 	fmt.Println(alacrittyMainConfigPath)
-	fmt.Println(a.config)
+	fmt.Println(config.Client["alacritty"])
 
-	themePath := fmt.Sprintf("%s/%s-%s.toml", a.config["theme-path"], theme.ThemeName, theme.VariantName)
+	themePath := fmt.Sprintf("%s/%s-%s.toml", config.Client["alacritty"]["theme-path"], theme.ThemeName, theme.VariantName)
 	n, err := ReplaceAtTag(
 		alacrittyConfigPath,
 		fmt.Sprintf("\"%s\", # shades-replace", themePath),

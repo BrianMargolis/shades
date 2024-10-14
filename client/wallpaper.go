@@ -1,17 +1,9 @@
 package client
 
-import "fmt"
+type MacWallpaperClient struct{}
 
-type MacWallpaperClient struct {
-	light string
-	dark  string
-}
-
-func NewMacWallpaperClient(config map[string]string) Client {
-	return MacWallpaperClient{
-		light: config["light"],
-		dark:  config["dark"],
-	}
+func NewMacWallpaperClient() Client {
+	return MacWallpaperClient{}
 }
 
 func (m MacWallpaperClient) Start(socketName string) error {
@@ -19,15 +11,21 @@ func (m MacWallpaperClient) Start(socketName string) error {
 }
 
 func (m MacWallpaperClient) set(theme ThemeVariant) error {
-	wallpaperPath := m.dark
+	config, err := GetConfig()
+	if err != nil {
+		return err
+	}
+
+	dark := config.Client["mac-wallpaper"]["dark"]
+	light := config.Client["mac-wallpaper"]["light"]
+	wallpaperPath := dark
 	if theme.Light {
-		wallpaperPath = m.light
+		wallpaperPath = light
 	}
 
 	wallpaperPath = ExpandTilde(wallpaperPath)
 
 	script := `tell application "Finder" to set desktop picture to POSIX file "` + wallpaperPath + `"`
-	fmt.Println(script)
-	_, err := RunApplescript(script)
+	_, err = RunApplescript(script)
 	return err
 }

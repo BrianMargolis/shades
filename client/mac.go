@@ -2,10 +2,9 @@ package client
 
 import "strconv"
 
-type MacClient struct {
-}
+type MacClient struct{}
 
-func NewMacClient(_ map[string]string) Client {
+func NewMacClient() Client {
 	return MacClient{}
 }
 

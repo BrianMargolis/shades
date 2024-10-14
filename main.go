@@ -71,9 +71,7 @@ func main() {
 					fmt.Printf("no such client %s, ignoring\n", clientName)
 				}
 
-				err := clientConstructor(
-					config.Client[clientName],
-				).Start(socketPath)
+				err := clientConstructor().Start(socketPath)
 				if err != nil {
 					panic(err)
 				}

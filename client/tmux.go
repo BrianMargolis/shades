@@ -7,12 +7,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-type TMUXClient struct {
-	config map[string]string
-}
+type TMUXClient struct{}
 
-func NewTMUXClient(config map[string]string) Client {
-	return TMUXClient{config: config}
+func NewTMUXClient() Client {
+	return TMUXClient{}
 }
 
 func (t TMUXClient) Start(socket string) error {
@@ -20,6 +18,10 @@ func (t TMUXClient) Start(socket string) error {
 }
 
 func (t TMUXClient) set(theme ThemeVariant) error {
+	config, err := GetConfig()
+	if err != nil {
+		return err
+	}
 	for _, optionName := range []string{
 		"status-bg",
 		"status-fg",
@@ -28,7 +30,7 @@ func (t TMUXClient) set(theme ThemeVariant) error {
 		"status-left",
 		"status-right",
 	} {
-		template := t.config[optionName]
+		template := config.Client["tmux"][optionName]
 		value := DoTemplate(template, theme)
 
 		err := t.setTMUXOption(optionName, value)
