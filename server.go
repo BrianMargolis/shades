@@ -1,6 +1,7 @@
 package main
 
 import (
+	"brianmargolis/shades/client"
 	"brianmargolis/shades/protocol"
 	"bufio"
 	"fmt"
@@ -20,16 +21,10 @@ type Server interface {
 	Start(socketPath string) error
 }
 
-type server struct {
-	defaultDarkTheme  string
-	defaultLightTheme string
-}
+type server struct{}
 
-func NewServer(defaultDarkTheme, defaultLightTheme string) Server {
-	return &server{
-		defaultDarkTheme:  defaultDarkTheme,
-		defaultLightTheme: defaultLightTheme,
-	}
+func NewServer() Server {
+	return &server{}
 }
 
 func (s *server) Start(socketPath string) error {
@@ -39,13 +34,6 @@ func (s *server) Start(socketPath string) error {
 		panic(err)
 	}
 	planForDeath(socket)
-
-	currentlyDark, err := isCurrentlyDark()
-	if err != nil {
-		fmt.Println("Error checking current state: ", err)
-		panic(err)
-	}
-	_ = currentlyDark
 
 	clients := []net.Conn{}
 	clientMutex := sync.Mutex{}
@@ -87,12 +75,6 @@ func (s *server) talkToClient(conn net.Conn, clients *[]net.Conn, mutex *sync.Mu
 			unsubscribe(mutex, clients, conn)
 		case "propose":
 			proposedTheme := parts[1]
-			// darkProposed := proposedTheme == "dark"
-			// currentlyDark, err := isCurrentlyDark()
-			// if err != nil {
-			// 	continue
-			// }
-
 			broadcast(mutex, clients, protocol.Set(proposedTheme))
 		case "get":
 			currentlyDark, err := isCurrentlyDark()
@@ -100,9 +82,13 @@ func (s *server) talkToClient(conn net.Conn, clients *[]net.Conn, mutex *sync.Mu
 				continue
 			}
 
-			theme := s.defaultLightTheme
+			defaultLightTheme, defaultDarkTheme, err := getDefaults()
+			if err != nil {
+				continue
+			}
+			theme := defaultLightTheme
 			if currentlyDark {
-				theme = s.defaultDarkTheme
+				theme = defaultDarkTheme
 			}
 
 			whisper(mutex, conn, protocol.Set(theme))
@@ -171,4 +157,12 @@ func planForDeath(socket net.Listener) {
 		socket.Close()
 		os.Exit(1)
 	}()
+}
+
+func getDefaults() (string, string, error) {
+	config, err := client.GetConfig()
+	if err != nil {
+		return "", "", err
+	}
+	return config.DefaultLightTheme, config.DefaultDarkTheme, nil
 }

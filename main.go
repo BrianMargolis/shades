@@ -85,7 +85,7 @@ func main() {
 			fmt.Printf("\t%s", client)
 		}
 	case "-s":
-		NewServer(config.DefaultDarkTheme, config.DefaultLightTheme).Start(socketPath)
+		NewServer().Start(socketPath)
 	case "dark", "d":
 		changer := client.ChangerClient{Theme: config.DefaultDarkTheme}
 		changer.Start(socketPath)
