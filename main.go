@@ -4,6 +4,7 @@ import (
 	"brianmargolis/shades/client"
 	"fmt"
 	"os"
+	"reflect"
 	"sync"
 )
 
@@ -80,9 +81,15 @@ func main() {
 
 		wg.Wait()
 	case "-l":
-		fmt.Println("available clients:")
-		for client := range CLIENTS {
-			fmt.Printf("\t%s", client)
+		themesVal := reflect.ValueOf(config.Themes)
+		nThemes := themesVal.NumField()
+		for i := 0; i < nThemes; i++ {
+			theme := themesVal.Field(i)
+			themeName := theme.FieldByName("Name")
+			variants := theme.FieldByName("Variants").MapKeys()
+			for _, variant := range variants {
+				fmt.Printf("%s;%s\n", themeName.String(), variant.String())
+			}
 		}
 	case "-s":
 		NewServer().Start(socketPath)
