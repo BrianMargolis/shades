@@ -105,5 +105,10 @@ func main() {
 			LightTheme: config.DefaultLightTheme,
 		}
 		toggler.Start(socketPath)
+	case "set":
+		if len(args) < 2 {
+			os.Exit(1)
+		}
+		client.ChangerClient{Theme: args[1]}.Start(socketPath)
 	}
 }
