@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 	"sync"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var CLIENTS = map[string]client.ClientConstructor{
@@ -40,6 +43,7 @@ const usage = `shades usage:
 
 // TODO make this configurable
 const socketPath = "/tmp/theme-change.sock"
+const verbose = false
 
 func main() {
 	args := os.Args[1:]
@@ -52,6 +56,24 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	level := zap.InfoLevel
+	if verbose {
+		level = zap.DebugLevel
+	}
+	logger, err := zap.Config{
+		Level:            zap.NewAtomicLevelAt(level),
+		Development:      true,
+		Encoding:         "console",
+		EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
+		OutputPaths:      []string{"/var/log/shades/shades.log"},
+		ErrorOutputPaths: []string{"/var/log/shades/shades.error.log"},
+	}.Build(zap.AddStacktrace(zapcore.ErrorLevel))
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Info("shades started", zap.Strings("args", args))
 
 	switch mode {
 	case "-h", "--help":
