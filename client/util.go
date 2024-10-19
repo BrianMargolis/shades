@@ -96,3 +96,11 @@ func DoTemplate(
 	}
 	return template
 }
+
+func LookPath(executableName string) (string, error) {
+	path, err := exec.LookPath(executableName)
+	if err != nil {
+		return "", errors.Wrapf(err, "executable not found: %s", executableName)
+	}
+	return path, nil
+}
