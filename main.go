@@ -2,6 +2,7 @@ package main
 
 import (
 	"brianmargolis/shades/client"
+	"brianmargolis/shades/picker"
 	"fmt"
 	"os"
 	"sync"
@@ -126,5 +127,12 @@ func main() {
 			os.Exit(1)
 		}
 		client.ChangerClient{Theme: args[1]}.Start(socketPath)
+	case "i", "interactive":
+		_, err := picker.NewPicker(logger).Start(picker.PickerOpts{
+			SocketPath: socketPath,
+		})
+		if err != nil {
+			panic(err)
+		}
 	}
 }
