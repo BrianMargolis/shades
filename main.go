@@ -4,7 +4,6 @@ import (
 	"brianmargolis/shades/client"
 	"fmt"
 	"os"
-	"reflect"
 	"sync"
 )
 
@@ -81,14 +80,9 @@ func main() {
 
 		wg.Wait()
 	case "-l":
-		themesVal := reflect.ValueOf(config.Themes)
-		nThemes := themesVal.NumField()
-		for i := 0; i < nThemes; i++ {
-			theme := themesVal.Field(i)
-			themeName := theme.FieldByName("Name")
-			variants := theme.FieldByName("Variants").MapKeys()
-			for _, variant := range variants {
-				fmt.Printf("%s;%s\n", themeName.String(), variant.String())
+		for themeName, theme := range config.Themes {
+			for variantName, _ := range theme.Variants {
+				fmt.Printf("%s;%s\n", themeName, variantName)
 			}
 		}
 	case "-s":

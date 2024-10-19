@@ -87,16 +87,6 @@ func ExpandTilde(path string) string {
 	return path
 }
 
-func GetThemeAndVariant(themeAndVariant string) (string, string, error) {
-	parts := strings.Split(themeAndVariant, ";")
-
-	if len(parts) != 2 {
-		return "", "", errors.New("invalid theme and variant")
-	}
-
-	return parts[0], parts[1], nil
-}
-
 func DoTemplate(
 	template string,
 	variant ThemeVariant,

@@ -1,6 +1,10 @@
 package client
 
-import "github.com/pkg/errors"
+import (
+	"strings"
+
+	"github.com/pkg/errors"
+)
 
 type ThemeVariant struct {
 	Light       bool             `yaml:"light"`
@@ -9,83 +13,42 @@ type ThemeVariant struct {
 	VariantName string           // same
 }
 
-// EVERFOREST
-type ThemeEverforestVariant string
-
-const (
-	ThemeEverforestVariantDarkHard    ThemeEverforestVariant = "dark-hard"
-	ThemeEverforestVariantDarkMedium  ThemeEverforestVariant = "dark-medium"
-	ThemeEverforestVariantDarkSoft    ThemeEverforestVariant = "dark-low"
-	ThemeEverforestVariantLightHard   ThemeEverforestVariant = "light-hard"
-	ThemeEverforestVariantLightMedium ThemeEverforestVariant = "light-medium"
-	ThemeEverforestVariantLightSoft   ThemeEverforestVariant = "light-low"
-)
-
-type ThemeEverforest struct {
-	Name     string                                  `yaml:"name"`
-	Variants map[ThemeEverforestVariant]ThemeVariant `yaml:"variants"`
+type Theme struct {
+	Name     string                  `yaml:"name"`
+	Variants map[string]ThemeVariant `yaml:"variants"`
 }
 
-// CATPPUCCIN
-type ThemeCatppuccinVariant string
-
-const (
-	ThemeCatppuccinVariantLatte ThemeCatppuccinVariant = "latte"
-	ThemeCatppuccinVariantMocha ThemeCatppuccinVariant = "mocha"
-)
-
-type ThemeCatppuccin struct {
-	Name     string                                  `yaml:"name"`
-	Variants map[ThemeCatppuccinVariant]ThemeVariant `yaml:"variants"`
-}
-
-// GRUVBOX
-type ThemeGruvboxVariant string
-
-const (
-	ThemeGruvboxVariantLight ThemeGruvboxVariant = "light"
-	ThemeGruvboxVariantDark  ThemeGruvboxVariant = "dark"
-)
-
-type ThemeGruvbox struct {
-	Name     string                               `yaml:"name"`
-	Variants map[ThemeGruvboxVariant]ThemeVariant `yaml:"variants"`
-}
-
-type Themes struct {
-	Everforest ThemeEverforest `yaml:"everforest"`
-	Catppuccin ThemeCatppuccin `yaml:"catppuccin"`
-	Gruvbox    ThemeGruvbox    `yaml:"gruvbox"`
-}
+type Themes map[string]Theme
 
 func (t Themes) GetVariant(themeAndVariant string) (ThemeVariant, error) {
-	theme, variant, err := GetThemeAndVariant(themeAndVariant)
+	themeName, variantName, err := t.parse(themeAndVariant)
 	if err != nil {
 		return ThemeVariant{}, err
 	}
 
-	themeVariant, err := t.getVariant(theme, variant)
-	if err != nil {
-		return ThemeVariant{}, err
+	theme, ok := t[themeName]
+	if !ok {
+		return ThemeVariant{}, errors.Errorf("unknown theme: %s", themeName)
 	}
 
-	themeVariant.ThemeName = theme
-	themeVariant.VariantName = variant
+	themeVariant, ok := theme.Variants[variantName]
+	if !ok {
+		return ThemeVariant{}, errors.Errorf("unknown variant: %s", variantName)
+	}
+
+	themeVariant.ThemeName = themeName
+	themeVariant.VariantName = variantName
 
 	return themeVariant, nil
 }
 
-func (t Themes) getVariant(theme, variant string) (ThemeVariant, error) {
-	switch theme {
-	case "everforest":
-		return t.Everforest.Variants[ThemeEverforestVariant(variant)], nil
-	case "catppuccin":
-		return t.Catppuccin.Variants[ThemeCatppuccinVariant(variant)], nil
-	case "gruvbox":
-		return t.Gruvbox.Variants[ThemeGruvboxVariant(variant)], nil
+func (t Themes) parse(themeAndVariant string) (string, string, error) {
+	parts := strings.Split(themeAndVariant, ";")
+	if len(parts) != 2 {
+		return "", "", errors.New("invalid theme and variant")
 	}
 
-	return ThemeVariant{}, errors.New("unknown theme or variant")
+	return parts[0], parts[1], nil
 }
 
 type Color string
