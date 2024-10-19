@@ -70,8 +70,11 @@ func (p *picker) pick(_ PickerOpts) (result string, err error) {
 	p.logger.Debugw("fzfPath", "fzfPath", fzfPath)
 
 	fzfOptions := []string{
-		"--height=~100%",
+		"--height=44",
 		"--bind=one:accept",
+		"--preview=shades preview {}",
+		"--preview-window",
+		"up,70%,border-none",
 	}
 	cmd := exec.Command(fzfPath, fzfOptions...)
 	pipeIn, err := cmd.StdinPipe()

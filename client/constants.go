@@ -73,3 +73,24 @@ const (
 	ColorGray2  Color = "GRAY2"
 	ColorGray3  Color = "GRAY3"
 )
+
+var AllColors = []Color{
+	ColorBGDim,
+	ColorBG0,
+	ColorBG1,
+	ColorBG2,
+	ColorBG3,
+	ColorBG4,
+	ColorBG5,
+	ColorRed,
+	ColorOrange,
+	ColorYellow,
+	ColorGreen,
+	ColorBlue,
+	ColorAqua,
+	ColorPurple,
+	ColorFG,
+	ColorGray1,
+	ColorGray2,
+	ColorGray3,
+}

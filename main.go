@@ -3,6 +3,7 @@ package main
 import (
 	"brianmargolis/shades/client"
 	"brianmargolis/shades/picker"
+	"brianmargolis/shades/preview"
 	"fmt"
 	"os"
 	"sync"
@@ -40,7 +41,15 @@ const usage = `shades usage:
 
 	Toggle the theme:
 	shades toggle
-	shades t`
+	shades t
+
+  Interactively pick the theme:
+  shades interactive
+  shades i
+
+  Preview a theme:
+  shades preview
+  shades p`
 
 // TODO make this configurable
 const socketPath = "/tmp/theme-change.sock"
@@ -134,5 +143,19 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+	case "p", "preview":
+		if len(args) < 1 {
+			fmt.Println(args)
+			os.Exit(1)
+		}
+		theme, err := config.Themes.GetVariant(args[1])
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		swatches, err := preview.NewPreviewer(logger).Preview(theme)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
+		fmt.Println(swatches)
 	}
 }
