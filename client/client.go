@@ -56,10 +56,6 @@ func SocketAsChannel(socket string) (chan string, chan string, error) {
 func SubscribeToSocket(
 	setter func(theme ThemeVariant) error,
 ) func(string) error {
-	config, err := GetConfig()
-	if err != nil {
-		panic(err)
-	}
 
 	return func(socketName string) error {
 		read, write, err := SocketAsChannel(socketName)
@@ -76,6 +72,11 @@ func SubscribeToSocket(
 			}
 
 			if verb == "set" {
+				config, err := GetConfig()
+				if err != nil {
+					panic(err)
+				}
+
 				themeAndVariant := strings.TrimSpace(noun)
 				themeVariant, err := config.Themes.GetVariant(themeAndVariant)
 				if err != nil {
