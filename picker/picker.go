@@ -73,6 +73,7 @@ func (p *picker) pick(_ PickerOpts) (result string, err error) {
 		"--height=44",
 		"--bind=one:accept",
 		"--preview=shades preview {}",
+		"--no-scrollbar",
 		"--preview-window",
 		"up,70%,border-none",
 	}
