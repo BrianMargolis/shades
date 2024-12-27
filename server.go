@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 )
 
@@ -21,7 +22,9 @@ type Server interface {
 	Start(socketPath string) error
 }
 
-type server struct{}
+type server struct {
+	currentTheme atomic.Pointer[string]
+}
 
 func NewServer() Server {
 	return &server{}
@@ -75,23 +78,27 @@ func (s *server) talkToClient(conn net.Conn, clients *[]net.Conn, mutex *sync.Mu
 			unsubscribe(mutex, clients, conn)
 		case "propose":
 			proposedTheme := parts[1]
+			s.currentTheme.Store(&proposedTheme)
 			broadcast(mutex, clients, protocol.Set(proposedTheme))
 		case "get":
-			currentlyDark, err := isCurrentlyDark()
-			if err != nil {
-				continue
+			theme := s.currentTheme.Load()
+			if theme == nil {
+				currentlyDark, err := isCurrentlyDark()
+				if err != nil {
+					continue
+				}
+
+				defaultLightTheme, defaultDarkTheme, err := getDefaults()
+				if err != nil {
+					continue
+				}
+				theme = &defaultLightTheme
+				if currentlyDark {
+					theme = &defaultDarkTheme
+				}
 			}
 
-			defaultLightTheme, defaultDarkTheme, err := getDefaults()
-			if err != nil {
-				continue
-			}
-			theme := defaultLightTheme
-			if currentlyDark {
-				theme = defaultDarkTheme
-			}
-
-			whisper(mutex, conn, protocol.Set(theme))
+			whisper(mutex, conn, protocol.Set(*theme))
 		}
 	}
 }
