@@ -64,6 +64,6 @@ func (c TogglerClient) getCurrentTheme() (string, error) {
 	if strings.TrimSpace(string(output)) == "true" {
 		return c.DarkTheme, nil
 	} else {
-		return c.DarkTheme, nil
+		return c.LightTheme, nil
 	}
 }
