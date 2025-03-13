@@ -139,6 +139,8 @@ func main() {
 	case "i", "interactive":
 		_, err := picker.NewPicker(logger).Start(picker.PickerOpts{
 			SocketPath: socketPath,
+			// TODO: get a little more sophisticated with this
+			UseTmux: len(args) > 1 && args[1] == "--tmux",
 		})
 		if err != nil {
 			panic(err)

@@ -15,6 +15,7 @@ import (
 
 type PickerOpts struct {
 	SocketPath string
+	UseTmux    bool
 }
 
 type Picker interface {
@@ -55,7 +56,7 @@ func (p *picker) Start(opts PickerOpts) (result string, err error) {
 	return
 }
 
-func (p *picker) pick(_ PickerOpts) (result string, err error) {
+func (p *picker) pick(opts PickerOpts) (result string, err error) {
 	config, err := client.GetConfig()
 	if err != nil {
 		err = errors.Wrap(err, "failed to get config")
@@ -66,7 +67,7 @@ func (p *picker) pick(_ PickerOpts) (result string, err error) {
 	pickerOptions := p.getOptions(config)
 	p.logger.Debugw("options", "options", pickerOptions)
 
-	fzfPath, err := client.LookPath("fzf")
+	fzfPath, err := client.LookPath(p.getCommand(opts))
 	if err != nil {
 		err = errors.Wrap(err, "failed to get fzf executable path")
 		return
@@ -84,6 +85,13 @@ func (p *picker) pick(_ PickerOpts) (result string, err error) {
 		"--preview-window",
 		"up,70%,border-none",
 		"--cycle",
+	}
+
+	if opts.UseTmux {
+		// floating window
+		fzfOptions = append([]string{
+			"-w 50%",
+		}, fzfOptions...)
 	}
 	cmd := exec.Command(fzfPath, fzfOptions...)
 	pipeIn, err := cmd.StdinPipe()
@@ -125,6 +133,13 @@ func (p *picker) pick(_ PickerOpts) (result string, err error) {
 	result = string(resultBytes)
 
 	return
+}
+
+func (p *picker) getCommand(opts PickerOpts) string {
+	if opts.UseTmux {
+		return "fzf-tmux"
+	}
+	return "fzf"
 }
 
 func (*picker) getOptions(config client.ConfigModel) []string {
