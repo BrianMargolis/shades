@@ -36,6 +36,10 @@ func NewPicker(
 
 func (p *picker) Start(opts PickerOpts) (result string, err error) {
 	p.logger.Debug("Start")
+	// TODO:
+	// first, get the current theme - if the user bails without picking a theme,
+	// we want to restore that theme as the previewer will have changed it
+
 	result, err = p.pick(opts)
 	if err != nil {
 		err = errors.Wrap(err, "failed to pick")
@@ -71,11 +75,15 @@ func (p *picker) pick(_ PickerOpts) (result string, err error) {
 
 	fzfOptions := []string{
 		"--height=44",
+		// save an enter once we've narrowed it down to one
 		"--bind=one:accept",
+		// live preview
+		"--bind=focus:execute(shades set {})",
 		"--preview=shades preview {}",
 		"--no-scrollbar",
 		"--preview-window",
 		"up,70%,border-none",
+		"--cycle",
 	}
 	cmd := exec.Command(fzfPath, fzfOptions...)
 	pipeIn, err := cmd.StdinPipe()
