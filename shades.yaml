@@ -27,7 +27,7 @@ client:
     status-right: >
       #[fg={BG0},bg={RED}] #(date +"%I:%M%p" | tr '[:upper:]' '[:lower:]' | sed 's/^0//')
       #[bg=#fdf6e3]#[fg={BG0},bg={PURPLE})
-      #[bg=#fdf6e3]#[fg={BG0},bg={ORANGE}] #(cd #{pane_current_path}; dirs) 
+      #[bg=#fdf6e3]#[fg={BG0},bg={ORANGE}] #(cd #{pane_current_path}; dirs)
   btop:
     light-theme-path: "/Users/brian/.config/btop/themes/everforest-light-medium.theme"
     theme-path: "/Users/brian/.config/btop/themes"
@@ -36,7 +36,7 @@ client:
 themes:
   everforest:
     name: "everforest"
-    variants: 
+    variants:
       dark-hard:
         light: false
         colors:
@@ -165,17 +165,17 @@ themes:
           GRAY3: "#E66868"
   catppuccin:
     name: "catppuccin"
-    variants: 
+    variants:
       latte:
         light: true
         colors:
-          BGDIM: "#eff1f5"  # base
-          BG0: "#eff1f5"    # base
-          BG1: "#bcc0cc"    # surface 1
-          BG2: "#acb0be"    # surface 2
-          BG3: "#9ca0b0"    # overlay 0 
-          BG4: "#8c8fa1"    # overlay 1 
-          BG5: "#7c7f93"    # overlay 2
+          BGDIM: "#eff1f5" # base
+          BG0: "#eff1f5" # base
+          BG1: "#bcc0cc" # surface 1
+          BG2: "#acb0be" # surface 2
+          BG3: "#9ca0b0" # overlay 0
+          BG4: "#8c8fa1" # overlay 1
+          BG5: "#7c7f93" # overlay 2
           RED: "#d20f39"
           ORANGE: "#fe640b"
           YELLOW: "#df8e1d"
@@ -183,20 +183,20 @@ themes:
           BLUE: "#1e66f5"
           AQUA: "#04a5e5"
           PURPLE: "#8839ef"
-          FG: "#4c4f69"     # text
-          GRAY1: "#ccd0da"  # surface 0
-          GRAY2: "#bcc0cc"  # surface 1
-          GRAY3: "#acb0be"  # surface 2
+          FG: "#4c4f69" # text
+          GRAY1: "#ccd0da" # surface 0
+          GRAY2: "#bcc0cc" # surface 1
+          GRAY3: "#acb0be" # surface 2
       mocha:
         light: false
         colors:
-          BGDIM: "#1e1e2e"  # base
-          BG0: "#1e1e2e"    # base
-          BG1: "#45475a"    # surface 1
-          BG2: "#585b70"    # surface 2
-          BG3: "#6c7086"    # overlay 0 
-          BG4: "#7f849c"    # overlay 1 
-          BG5: "#9899b2"    # overlay 2
+          BGDIM: "#1e1e2e" # base
+          BG0: "#1e1e2e" # base
+          BG1: "#45475a" # surface 1
+          BG2: "#585b70" # surface 2
+          BG3: "#6c7086" # overlay 0
+          BG4: "#7f849c" # overlay 1
+          BG5: "#9899b2" # overlay 2
           RED: "#f38ba8"
           ORANGE: "#fab387"
           YELLOW: "#f9e2af"
@@ -204,7 +204,7 @@ themes:
           BLUE: "#89b4fa"
           AQUA: "#89dceb"
           PURPLE: "#cba6f7"
-          FG: "#cdd6f4"     # text
-          GRAY1: "#313244"  # surface 0
-          GRAY2: "#45475a"  # surface 1
-          GRAY3: "#585b70"  # surface 2
+          FG: "#cdd6f4" # text
+          GRAY1: "#313244" # surface 0
+          GRAY2: "#45475a" # surface 1
+          GRAY3: "#585b70" # surface 2

@@ -1,7 +1,7 @@
-# shades 
+# shades
 
 `shades` is a framework for changing the theme of everything in your terminal
-(and to some extent, beyond) in a synchronized way. 
+(and to some extent, beyond) in a synchronized way.
 
 ## Introduction
 
@@ -13,10 +13,11 @@ you want dark mode, and `shades` tells all your individual tools.
 A little demo of shades - this is toggling the theme in six separate components at once (neovim, neovim status line, tmux, alacritty, the wallpaper, and mac dark/light itself - which [dark reader](https://chromewebstore.google.com/detail/dark-reader/eimadpbcbfnmbkopoojfekhnkhdbieeh) syncs over to Chrome):
 ![shades in action](./docs/shades.gif)
 
-## Installation 
+## Installation
 
 Clone this repo, then:
-```
+
+```sh
 go install
 ```
 
@@ -24,7 +25,8 @@ go install
 
 The main way you'll interact with `shades` day-to-day is by invoking it to
 change the theme.
-```
+
+```sh
 shades dark   # or shades d
 shades light  # or shades l
 shades toggle # or shades t
@@ -38,27 +40,29 @@ one client.
 For `shades` to work at all, it must be running in server mode (`shades -s`) in
 the background.  
 
-
-### Step 2/3: setting up clients 
+### Step 2/3: setting up clients
 
 While `shades` is designed to be used by developers and configured with code,
 batteries are included for many popular tools, including:
+
 - alacritty
 - bat (requires fish)
 - fzf (requires fish)
 - tmux
-- bat 
+- bat
 - btop
 - macos dark/light theme
 - macos wallpaper  
 
 You can run these built-in clients with the `-c` flag.
-```
+
+```sh
 shades -c tmux alacritty fzf bat btop mac mac-wallpaper 
 ```
 
 You can get a list of all available clients with the `-l` flag.
-```
+
+```sh
 shades -l 
 ```
 
@@ -80,8 +84,10 @@ only supports Macs/`launchd` at the moment. To install the TUI, open up the
 daemon.
 
 ## Configuration
+
 `shades` is configured with a yaml file - an example can be found in this repo
 (`shades.yaml`). `shades` will look for this file in:
+
 1. the path that `SHADES_CONFIG` is set to
 2. if that's empty, `$HOME/.config/shades/shades.yaml`
 
@@ -90,19 +96,22 @@ daemon.
 Because UNIX sockets are a widely supported transport technology, and the
 protocol we build on top of it is trivial to implement in any language, you can
 integrate just about anything you can control programmatically with this
-framework. 
+framework.
 
 My recommendation is that you default to building these in Go with the same
 structure that the built in clients use. Basically, if you can fill out this
 method:
+
 ```go
 func (f FooClient) SetTheme(theme string) error {}
 ```
-with code that themes the thing you want themed, then you should do that. 
+
+with code that themes the thing you want themed, then you should do that.
 
 ### Protocol
 
 `shades` uses a simple plain text protocol with 5 `verb:noun` messages:
+
 1. `subscribe:name` - begin receiving `set` messages
 2. `unsubscribe:` - stop receiving `set` messages
 3. `set:{theme}` - can only be sent by the daemon, a client should re-theme
@@ -119,8 +128,8 @@ Each message is delimited by a `\n` character.
 `subscribe`s, waits for and acts open any `set`, and fires an `unsubscribe` on
 shutdown.
 
-
 ## TODOs
+
 - [x] turn the neovim stuff into a proper plugin
 - [x] basic configuration - stuff like paths
 - [x] advanced behavioral configuraton
@@ -129,3 +138,4 @@ shutdown.
 - [ ] make clients poll server for a bit before giving up - right now if the
   server isn't up, the clients just immediately die, and it would be nice to
   just start both simultaneously.
+- [ ] look at using Hammerspoon to control the machine, listen for system dark/light events
