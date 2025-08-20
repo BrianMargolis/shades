@@ -4,8 +4,7 @@ import (
 	"brianmargolis/shades/client"
 	"brianmargolis/shades/protocol"
 	"bufio"
-	"fmt"
-	"log"
+	"context"
 	"net"
 	"os"
 	"os/exec"
@@ -19,7 +18,7 @@ import (
 const MAX_CLIENTS = 100
 
 type Server interface {
-	Start(socketPath string) error
+	Start(ctx context.Context, socketPath string) error
 }
 
 type server struct {
@@ -30,13 +29,14 @@ func NewServer() Server {
 	return &server{}
 }
 
-func (s *server) Start(socketPath string) error {
+func (s *server) Start(ctx context.Context, socketPath string) error {
+	logger := client.LoggerFromContext(ctx)
 	socket, err := net.Listen("unix", socketPath)
 	if err != nil {
-		fmt.Println("Error listening: ", err)
+		logger.With("error", err).Error("Error listening on socket")
 		panic(err)
 	}
-	planForDeath(socket)
+	planForDeath(ctx, socket)
 
 	clients := []net.Conn{}
 	clientMutex := sync.Mutex{}
@@ -51,25 +51,33 @@ func (s *server) Start(socketPath string) error {
 			panic("Too many clients!")
 		}
 
-		go s.talkToClient(conn, &clients, &clientMutex)
+		go s.talkToClient(ctx, conn, &clients, &clientMutex)
 	}
 }
 
-func (s *server) talkToClient(conn net.Conn, clients *[]net.Conn, mutex *sync.Mutex) {
-	fmt.Println("new client connected: ", conn.RemoteAddr())
+func (s *server) talkToClient(
+	ctx context.Context,
+	conn net.Conn,
+	clients *[]net.Conn,
+	mutex *sync.Mutex,
+) {
+	logger := client.LoggerFromContext(ctx)
+
+	logger.Debug("talkToClient: ", conn.RemoteAddr())
 	defer conn.Close()
 
 	r := bufio.NewReader(conn)
 	for {
 		msg, err := r.ReadString('\n')
 		if err != nil {
-			log.Println("ERROR: client disconnect: ", err)
+			// cross me once, get the hell outta here forever
+			logger.With("error", err).Error("error reading from client - disconnecting")
 			unsubscribe(mutex, clients, conn)
 			return
 		}
 
+		logger.With("message", msg).Debug("received message from client")
 		parts := strings.Split(msg, ":")
-		fmt.Printf("Received: %s\n", msg)
 		verb := parts[0]
 		switch verb {
 		case "subscribe":
@@ -79,7 +87,7 @@ func (s *server) talkToClient(conn net.Conn, clients *[]net.Conn, mutex *sync.Mu
 		case "propose":
 			proposedTheme := parts[1]
 			s.currentTheme.Store(&proposedTheme)
-			broadcast(mutex, clients, protocol.Set(proposedTheme))
+			broadcast(ctx, mutex, clients, protocol.Set(proposedTheme))
 		case "get":
 			theme := s.currentTheme.Load()
 			if theme == nil {
@@ -98,7 +106,7 @@ func (s *server) talkToClient(conn net.Conn, clients *[]net.Conn, mutex *sync.Mu
 				}
 			}
 
-			whisper(mutex, conn, protocol.Set(*theme))
+			whisper(ctx, mutex, conn, protocol.Set(*theme))
 		}
 	}
 }
@@ -121,25 +129,28 @@ func unsubscribe(mutex *sync.Mutex, clients *[]net.Conn, conn net.Conn) {
 }
 
 // broadcast sends a message to all the clients
-func broadcast(mutex *sync.Mutex, clients *[]net.Conn, msg []byte) {
+func broadcast(ctx context.Context, mutex *sync.Mutex, clients *[]net.Conn, msg []byte) {
+	logger := client.LoggerFromContext(ctx)
 	mutex.Lock()
 	defer mutex.Unlock()
-	fmt.Printf("broadcasting to %d clients: %s\n", len(*clients), string(msg))
+	logger.With("nClients", len(*clients), "message", string(msg)).Debug("broadcasting message to clients")
+
 	for _, c := range *clients {
 		_, err := c.Write(msg)
 		if err != nil {
-			log.Println("Write error: ", err)
+			logger.With("error", err, "client", c.RemoteAddr()).Warn("error writing to client during broadcast")
 		}
 	}
 }
 
 // whisper sends a message to just one client
-func whisper(mutex *sync.Mutex, conn net.Conn, msg []byte) {
+func whisper(ctx context.Context, mutex *sync.Mutex, conn net.Conn, msg []byte) {
+	logger := client.LoggerFromContext(ctx)
 	mutex.Lock()
 	defer mutex.Unlock()
 	_, err := conn.Write(msg)
 	if err != nil {
-		log.Println("Write error: ", err)
+		logger.With("error", err, "client", conn.RemoteAddr()).Warn("error writing to individual client (whispering")
 	}
 }
 
@@ -154,13 +165,13 @@ func isCurrentlyDark() (bool, error) {
 	return strings.TrimSpace(string(output)) == "true", nil
 }
 
-func planForDeath(socket net.Listener) {
+func planForDeath(ctx context.Context, socket net.Listener) {
 	// listen for SIGINT and SIGTERM signals, because we are a well behaved daemon.
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-signalChan
-		fmt.Println("Received an interrupt, stopping services...")
+		client.LoggerFromContext(ctx).Info("Received shutdown signal, cleaning up and exiting...")
 		socket.Close()
 		os.Exit(1)
 	}()

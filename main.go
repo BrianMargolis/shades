@@ -115,12 +115,12 @@ func main() {
 		wg.Wait()
 	case "-l":
 		for themeName, theme := range config.Themes {
-			for variantName, _ := range theme.Variants {
+			for variantName := range theme.Variants {
 				fmt.Printf("%s;%s\n", themeName, variantName)
 			}
 		}
 	case "-s":
-		NewServer().Start(socketPath)
+		NewServer().Start(ctx, socketPath)
 	case "dark", "d":
 		changer := client.ChangerClient{Theme: config.DefaultDarkTheme}
 		changer.Start(ctx, socketPath)
