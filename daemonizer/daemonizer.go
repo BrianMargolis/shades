@@ -27,6 +27,7 @@ func initialModel() model {
 			"alacritty",
 			"bat",
 			"btop",
+			"claude",
 			"fzf",
 			"mac",
 			"mac-wallpaper",

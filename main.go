@@ -76,9 +76,11 @@ func main() {
 	logger.Info("shades started", zap.Strings("args", args))
 
 	var CLIENTS = map[string]client.Client{
+		// TODO: add loggers to all of these
 		"alacritty":     client.NewAlacrittyClient(logger.Sugar()),
 		"bat":           client.NewBatClient(),
 		"btop":          client.NewBtopClient(),
+		"claude":        client.NewClaudeClient(logger.Sugar()),
 		"debug":         client.NewDebugClient(),
 		"fzf":           client.NewFZFClient(),
 		"mac":           client.NewMacClient(),
