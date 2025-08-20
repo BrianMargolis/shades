@@ -12,6 +12,11 @@ type ConfigModel struct {
 	Themes            Themes                       `yaml:"themes"`
 	DefaultDarkTheme  string                       `yaml:"defaultDarkTheme"`
 	DefaultLightTheme string                       `yaml:"defaultLightTheme"`
+	Daemon            DaemonConfig                 `yaml:"daemon"`
+}
+
+type DaemonConfig struct {
+	EnabledComponents []string `yaml:"enabled-components"`
 }
 
 func GetConfig() (ConfigModel, error) {

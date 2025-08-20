@@ -1,6 +1,15 @@
 socket-path: "/tmp/theme-change.sock"
 defaultLightTheme: "catppuccin;latte"
 defaultDarkTheme: "catppuccin;mocha"
+daemon:
+  enabled-components:
+    - "alacritty"
+    - "bat"
+    - "btop"
+    - "claude"
+    - "fzf"
+    - "mac"
+    - "tmux"
 client:
   mac-wallpaper:
     dark: "/Users/brian/Pictures/loupe/loupe-mono-dark.heic"

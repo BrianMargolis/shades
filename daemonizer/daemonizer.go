@@ -8,153 +8,45 @@ import (
 	"path/filepath"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	"brianmargolis/shades/client"
+
 	"github.com/pkg/errors"
 )
 
-type model struct {
-	choices     []string
-	cursor      int
-	selected    map[int]bool
-	configuring bool
-	uninstall   bool
-	verbose     bool
-}
-
-func initialModel() model {
-	return model{
-		choices: []string{
-			"alacritty",
-			"bat",
-			"btop",
-			"claude",
-			"fzf",
-			"mac",
-			"mac-wallpaper",
-			"tmux",
-		},
-		cursor:   0,
-		selected: make(map[int]bool),
-	}
-}
-
-type errMsg struct{ err error }
-
-func (e errMsg) Error() string { return e.err.Error() }
-
-type confirmMsg struct{}
-
-func (m model) Init() tea.Cmd {
+func validateDependencies() error {
 	// validate shades is installed
 	err := exec.Command("which", "shades").Run()
 	if err != nil {
-		return func() tea.Msg {
-			return errMsg{errors.New("shades not found in GOPATH/bin")}
-		}
+		return errors.New("shades not found in GOPATH/bin")
 	}
 
 	// validate launchctl exists
 	err = exec.Command("which", "launchctl").Run()
 	if err != nil {
-		return func() tea.Msg {
-			return errMsg{errors.New("launchctl not found")}
-		}
-	}
-
-	// default to all because that's what I use
-	for i := range m.choices {
-		m.selected[i] = true
+		return errors.New("launchctl not found")
 	}
 
 	return nil
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyCtrlC, tea.KeyEsc:
-			return m, tea.Quit
-		case tea.KeyUp:
-			if m.cursor > 0 {
-				m.cursor--
-			}
-		case tea.KeyDown:
-			if m.cursor < len(m.choices)-1 {
-				m.cursor++
-			}
-		case tea.KeySpace:
-			m.selected[m.cursor] = !m.selected[m.cursor]
-		case tea.KeyEnter:
-			return m, createLaunchdConfigs(m.selectedChoices(), m.uninstall, m.verbose)
-
-		case tea.KeyRunes:
-			switch string(msg.Runes) {
-			case "q":
-				return m, tea.Quit
-			case "k":
-				if m.cursor > 0 {
-					m.cursor--
-				}
-			case "j":
-				if m.cursor < len(m.choices)-1 {
-					m.cursor++
-				}
-			}
-		}
-	case errMsg:
-		log.Fatal(msg)
-		return m, tea.Quit
-	case confirmMsg:
-		return m, tea.Quit
-	}
-	return m, nil
-}
-
-func (m model) View() string {
-	if m.configuring {
-		return "Configuring...\n"
+func getEnabledComponents(config client.ConfigModel) []string {
+	// if daemon config is present, use it
+	if len(config.Daemon.EnabledComponents) > 0 {
+		return config.Daemon.EnabledComponents
 	}
 
-	s := "Choose components for shades-embedded-clients (space to select, enter to confirm):\n\n"
-
-	for i, choice := range m.choices {
-		checked := " "
-		if m.selected[i] {
-			checked = "x"
-		}
-
-		pointer := " "
-		if i == m.cursor {
-			pointer = ">"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", pointer, checked, choice)
+	// fallback to all available components if not configured
+	availableComponents := []string{
+		"alacritty",
+		"bat",
+		"btop",
+		"claude",
+		"fzf",
+		"mac",
+		"tmux",
 	}
 
-	s += "\nPress q to quit.\n"
-	return s
-}
-
-func (m model) selectedChoices() []string {
-	var choices []string
-	for i, choice := range m.choices {
-		if m.selected[i] {
-			choices = append(choices, choice)
-		}
-	}
-	return choices
-}
-
-func createLaunchdConfigs(selectedChoices []string, uninstall bool, verbose bool) tea.Cmd {
-	return func() tea.Msg {
-		err := installConfigs(selectedChoices, verbose)
-		if err != nil {
-			return errMsg{err}
-		}
-
-		return confirmMsg{}
-	}
+	return availableComponents
 }
 
 // TODO support empty selectedChoices
@@ -249,20 +141,41 @@ func reloadPlist(path string) error {
 
 func main() {
 	args := os.Args[1:]
-	m := initialModel()
+	var verbose bool
 
 	for _, arg := range args {
 		switch arg {
 		case "-u":
-			m.uninstall = true
+			log.Fatal("Uninstall functionality not yet implemented in config-driven mode")
 		case "-v":
-			m.verbose = true
+			verbose = true
 		}
 	}
 
-	program := tea.NewProgram(m)
-	_, err := program.Run()
+	// validate dependencies
+	err := validateDependencies()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// load configuration
+	config, err := client.GetConfig()
+	if err != nil {
+		log.Fatal("Failed to load config:", err)
+	}
+
+	// get enabled components from config
+	enabledComponents := getEnabledComponents(config)
+
+	if verbose {
+		fmt.Printf("Configuring daemon with components: %v\n", enabledComponents)
+	}
+
+	// install/configure the daemon services
+	err = installConfigs(enabledComponents, verbose)
+	if err != nil {
+		log.Fatal("Failed to configure daemon:", err)
+	}
+
+	fmt.Println("Daemon configuration completed successfully")
 }
