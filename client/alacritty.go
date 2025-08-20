@@ -6,16 +6,29 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
-type AlacrittyClient struct{}
+type AlacrittyClient struct {
+	logger *zap.SugaredLogger
+}
 
-func NewAlacrittyClient() Client {
-	return AlacrittyClient{}
+func NewAlacrittyClient(
+	logger *zap.SugaredLogger,
+) Client {
+	return AlacrittyClient{
+		logger: logger.With("client", "alacritty"),
+	}
 }
 
 func (a AlacrittyClient) Start(socket string) error {
-	return SubscribeToSocket(a.set)(socket)
+	return SubscribeToSocket(func(theme ThemeVariant) error {
+		err := a.set(theme)
+		if err != nil {
+			a.logger.Error("Error setting theme:", err)
+		}
+		return errors.Wrap(err, "setting alacritty theme")
+	})(socket)
 }
 
 func (a AlacrittyClient) set(theme ThemeVariant) error {
@@ -23,31 +36,33 @@ func (a AlacrittyClient) set(theme ThemeVariant) error {
 	if err != nil {
 		return err
 	}
+	logger := a.logger.With("theme", theme.ThemeName, "variant", theme.VariantName)
 
-	alacrittyConfigPath := ExpandTilde(config.Client["alacritty"]["alacritty-config-path"])
-	if alacrittyConfigPath == "" {
-		alacrittyConfigPath = os.Getenv("HOME") + "/.config/alacritty/alacritty.toml"
+	themeConfigPath := ExpandTilde(config.Client["alacritty"]["alacritty-config-path"])
+	if themeConfigPath == "" {
+		themeConfigPath = os.Getenv("HOME") + "/.config/alacritty/alacritty.toml"
 	}
-	alacrittyMainConfigPath := ExpandTilde(config.Client["alacritty"]["alacritty-main-config-path"])
-	fmt.Println(alacrittyMainConfigPath)
-	fmt.Println(config.Client["alacritty"])
-
-	themePath := fmt.Sprintf("%s/%s-%s.toml", config.Client["alacritty"]["theme-path"], theme.ThemeName, theme.VariantName)
-	n, err := ReplaceAtTag(
-		alacrittyConfigPath,
-		fmt.Sprintf("\"%s\", # shades-replace", themePath),
-		"# shades-replace",
+	mainConfigPath := ExpandTilde(config.Client["alacritty"]["alacritty-main-config-path"])
+	logger = logger.With(
+		"themeConfigPath", themeConfigPath,
+		"mainConfigPath", mainConfigPath,
 	)
+
+	themePath := ExpandTilde(fmt.Sprintf("%s/%s-%s.toml", config.Client["alacritty"]["theme-path"], theme.ThemeName, theme.VariantName))
+	logger = logger.With("themePath", themePath)
+
+	themeContent, err := os.ReadFile(themePath)
 	if err != nil {
-		return errors.Wrap(err, "replacing alacritty theme path")
+		return errors.Wrap(err, "reading theme file")
 	}
 
-	if n == 0 {
-		fmt.Println("WARNING: no '# shades-replace' tag found in alacritty config: " + alacrittyConfigPath)
+	err = os.WriteFile(themeConfigPath, themeContent, 0644)
+	if err != nil {
+		return errors.Wrap(err, "overwriting alacritty config with theme")
 	}
 
 	// touch the file to trigger a reload
-	err = os.Chtimes(alacrittyMainConfigPath, time.Now(), time.Now())
+	err = os.Chtimes(mainConfigPath, time.Now(), time.Now())
 	if err != nil {
 		return errors.Wrap(err, "touching alacritty config")
 	}

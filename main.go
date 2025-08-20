@@ -12,17 +12,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var CLIENTS = map[string]client.ClientConstructor{
-	"alacritty":     client.NewAlacrittyClient,
-	"bat":           client.NewBatClient,
-	"btop":          client.NewBtopClient,
-	"debug":         client.NewDebugClient,
-	"fzf":           client.NewFZFClient,
-	"mac":           client.NewMacClient,
-	"mac-wallpaper": client.NewMacWallpaperClient,
-	"tmux":          client.NewTMUXClient,
-}
-
 const usage = `shades usage: 
 	Start server mode:
 	shades -s
@@ -56,6 +45,7 @@ const socketPath = "/tmp/theme-change.sock"
 const verbose = false
 
 func main() {
+
 	args := os.Args[1:]
 	mode := "toggle"
 	if len(args) > 0 {
@@ -85,6 +75,17 @@ func main() {
 
 	logger.Info("shades started", zap.Strings("args", args))
 
+	var CLIENTS = map[string]client.Client{
+		"alacritty":     client.NewAlacrittyClient(logger.Sugar()),
+		"bat":           client.NewBatClient(),
+		"btop":          client.NewBtopClient(),
+		"debug":         client.NewDebugClient(),
+		"fzf":           client.NewFZFClient(),
+		"mac":           client.NewMacClient(),
+		"mac-wallpaper": client.NewMacWallpaperClient(),
+		"tmux":          client.NewTMUXClient(),
+	}
+
 	switch mode {
 	case "-h", "--help":
 		fmt.Println(usage)
@@ -98,12 +99,12 @@ func main() {
 			go func(clientName string) {
 				defer wg.Done()
 
-				clientConstructor, ok := CLIENTS[clientName]
+				client, ok := CLIENTS[clientName]
 				if !ok {
 					fmt.Printf("no such client %s, ignoring\n", clientName)
 				}
 
-				err := clientConstructor().Start(socketPath)
+				err := client.Start(socketPath)
 				if err != nil {
 					panic(err)
 				}
