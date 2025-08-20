@@ -78,6 +78,10 @@ func SetterWithContext(
 	return func(ctx context.Context, theme ThemeVariant) error {
 		logger := LoggerFromContext(ctx)
 
+		// sneak the client name into the logger, hehehe
+		logger = logger.With("client", clientName, "theme", theme.ThemeName, "variant", theme.VariantName)
+		ctx = WithLogger(ctx, logger)
+
 		err := setter(ctx, theme)
 		if err != nil && logger != nil {
 			logger.Errorw("Error setting theme",

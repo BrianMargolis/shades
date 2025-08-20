@@ -58,12 +58,8 @@ func main() {
 		panic(err)
 	}
 
-	level := zap.InfoLevel
-	if verbose {
-		level = zap.DebugLevel
-	}
 	logger, err := zap.Config{
-		Level:            zap.NewAtomicLevelAt(level),
+		Level:            zap.NewAtomicLevelAt(zap.DebugLevel),
 		Development:      true,
 		Encoding:         "console",
 		EncoderConfig:    zap.NewDevelopmentEncoderConfig(),

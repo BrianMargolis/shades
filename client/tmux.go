@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"os/exec"
 )
 
@@ -45,14 +44,14 @@ func (t TMUXClient) set(ctx context.Context, theme ThemeVariant) error {
 }
 
 func (t TMUXClient) setTMUXOption(optionName, value string) error {
+	logger := LoggerFromContext(context.Background())
 	tmuxPath, err := LookPath("tmux")
 	if err != nil {
 		return err
 	}
 
-	_, err = exec.Command(tmuxPath, "set-option", "-g", optionName, value).Output()
-	if err != nil {
-		fmt.Printf("ERROR setting %s: %s", optionName, err.Error())
-	}
-	return err
+	cmd := []string{"set-option", "-g", optionName, value}
+	logger = logger.With("tmuxPath", tmuxPath, "cmd", cmd)
+	logger.Debug("setting tmux option...")
+	return exec.Command(tmuxPath, cmd...).Run()
 }
