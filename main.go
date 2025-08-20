@@ -4,6 +4,7 @@ import (
 	"brianmargolis/shades/client"
 	"brianmargolis/shades/picker"
 	"brianmargolis/shades/preview"
+	"context"
 	"fmt"
 	"os"
 	"sync"
@@ -75,12 +76,14 @@ func main() {
 
 	logger.Info("shades started", zap.Strings("args", args))
 
+	ctx := context.Background()
+	ctx = client.WithLogger(ctx, logger.Sugar())
+
 	var CLIENTS = map[string]client.Client{
-		// TODO: add loggers to all of these
-		"alacritty":     client.NewAlacrittyClient(logger.Sugar()),
+		"alacritty":     client.NewAlacrittyClient(),
 		"bat":           client.NewBatClient(),
 		"btop":          client.NewBtopClient(),
-		"claude":        client.NewClaudeClient(logger.Sugar()),
+		"claude":        client.NewClaudeClient(),
 		"debug":         client.NewDebugClient(),
 		"fzf":           client.NewFZFClient(),
 		"mac":           client.NewMacClient(),
@@ -106,7 +109,7 @@ func main() {
 					fmt.Printf("no such client %s, ignoring\n", clientName)
 				}
 
-				err := client.Start(socketPath)
+				err := client.Start(ctx, socketPath)
 				if err != nil {
 					panic(err)
 				}
@@ -124,21 +127,21 @@ func main() {
 		NewServer().Start(socketPath)
 	case "dark", "d":
 		changer := client.ChangerClient{Theme: config.DefaultDarkTheme}
-		changer.Start(socketPath)
+		changer.Start(ctx, socketPath)
 	case "light", "l":
 		changer := client.ChangerClient{Theme: config.DefaultLightTheme}
-		changer.Start(socketPath)
+		changer.Start(ctx, socketPath)
 	case "toggle", "t":
 		toggler := client.TogglerClient{
 			DarkTheme:  config.DefaultDarkTheme,
 			LightTheme: config.DefaultLightTheme,
 		}
-		toggler.Start(socketPath)
+		toggler.Start(ctx, socketPath)
 	case "set":
 		if len(args) < 2 {
 			os.Exit(1)
 		}
-		client.ChangerClient{Theme: args[1]}.Start(socketPath)
+		client.ChangerClient{Theme: args[1]}.Start(ctx, socketPath)
 	case "i", "interactive":
 		_, err := picker.NewPicker(logger).Start(picker.PickerOpts{
 			SocketPath: socketPath,

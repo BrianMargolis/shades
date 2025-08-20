@@ -3,12 +3,16 @@ package client
 import (
 	"brianmargolis/shades/protocol"
 	"bufio"
+	"context"
 	"net"
 	"strings"
+
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 type Client interface {
-	Start(socket string) error
+	Start(ctx context.Context, socket string) error
 }
 
 type ClientConstructor func() Client
@@ -51,10 +55,51 @@ func SocketAsChannel(socket string) (chan string, chan string, error) {
 	return readChan, writeChan, nil
 }
 
+type loggerKey struct{}
+
+// WithLogger adds a logger to the context
+func WithLogger(ctx context.Context, logger *zap.SugaredLogger) context.Context {
+	return context.WithValue(ctx, loggerKey{}, logger)
+}
+
+// LoggerFromContext extracts the logger from context, and if it doesn't exist, returns a noop logger. Will never return nil.
+func LoggerFromContext(ctx context.Context) *zap.SugaredLogger {
+	if logger, ok := ctx.Value(loggerKey{}).(*zap.SugaredLogger); ok {
+		return logger
+	}
+	return zap.NewNop().Sugar()
+}
+
+// SetterWithContext wraps a theme setter function with context-based logging
+func SetterWithContext(
+	setter func(context.Context, ThemeVariant) error,
+	clientName string,
+) func(context.Context, ThemeVariant) error {
+	return func(ctx context.Context, theme ThemeVariant) error {
+		logger := LoggerFromContext(ctx)
+
+		err := setter(ctx, theme)
+		if err != nil && logger != nil {
+			logger.Errorw("Error setting theme",
+				"error", err,
+				"client", clientName,
+				"theme", theme.ThemeName,
+				"variant", theme.VariantName,
+			)
+		}
+
+		if err != nil {
+			return errors.Wrapf(err, "setting %s theme", clientName)
+		}
+		return nil
+	}
+}
+
 // SubscribeToSocket is a simple way to build a client if you don't need the
 // propose or get functionalities.
 func SubscribeToSocket(
-	setter func(theme ThemeVariant) error,
+	ctx context.Context,
+	setter func(ctx context.Context, theme ThemeVariant) error,
 ) func(string) error {
 
 	return func(socketName string) error {
@@ -83,7 +128,7 @@ func SubscribeToSocket(
 					return err
 				}
 
-				if err = setter(themeVariant); err != nil {
+				if err = setter(ctx, themeVariant); err != nil {
 					return err
 				}
 			}

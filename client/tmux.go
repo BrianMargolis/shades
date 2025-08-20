@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 )
@@ -11,11 +12,14 @@ func NewTMUXClient() Client {
 	return TMUXClient{}
 }
 
-func (t TMUXClient) Start(socket string) error {
-	return SubscribeToSocket(t.set)(socket)
+func (t TMUXClient) Start(ctx context.Context, socket string) error {
+	return SubscribeToSocket(
+		ctx,
+		SetterWithContext(t.set, "tmux"),
+	)(socket)
 }
 
-func (t TMUXClient) set(theme ThemeVariant) error {
+func (t TMUXClient) set(ctx context.Context, theme ThemeVariant) error {
 	config, err := GetConfig()
 	if err != nil {
 		return err

@@ -2,6 +2,7 @@ package client
 
 import (
 	"brianmargolis/shades/protocol"
+	"context"
 	"os/exec"
 	"strings"
 
@@ -14,7 +15,7 @@ type ChangerClient struct {
 	Theme string
 }
 
-func (c ChangerClient) Start(socketName string) error {
+func (c ChangerClient) Start(ctx context.Context, socketName string) error {
 	_, write, err := SocketAsChannel(socketName)
 	if err != nil {
 		return err
@@ -38,7 +39,7 @@ type TogglerClient struct {
 	LightTheme string
 }
 
-func (c TogglerClient) Start(socketName string) error {
+func (c TogglerClient) Start(ctx context.Context, socketName string) error {
 	currentTheme, err := c.getCurrentTheme()
 	if err != nil {
 		return errors.Wrap(err, "could not get current theme")
@@ -50,7 +51,7 @@ func (c TogglerClient) Start(socketName string) error {
 	}
 
 	changerClient := ChangerClient{Theme: newTheme}
-	return changerClient.Start(socketName)
+	return changerClient.Start(ctx, socketName)
 }
 
 func (c TogglerClient) getCurrentTheme() (string, error) {

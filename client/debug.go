@@ -2,6 +2,7 @@ package client
 
 import (
 	"brianmargolis/shades/protocol"
+	"context"
 	"fmt"
 )
 
@@ -11,7 +12,7 @@ func NewDebugClient() Client {
 	return DebugClient{}
 }
 
-func (d DebugClient) Start(socket string) error {
+func (d DebugClient) Start(ctx context.Context, socket string) error {
 	fmt.Println("Starting debug client")
 	read, write, err := SocketAsChannel(socket)
 	if err != nil {

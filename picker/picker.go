@@ -2,6 +2,7 @@ package picker
 
 import (
 	"brianmargolis/shades/client"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -48,7 +49,7 @@ func (p *picker) Start(opts PickerOpts) (result string, err error) {
 		return
 	}
 
-	err = client.ChangerClient{Theme: result}.Start(opts.SocketPath)
+	err = client.ChangerClient{Theme: result}.Start(context.Background(), opts.SocketPath)
 	if err != nil {
 		err = errors.Wrap(err, "failed to start ChangerClient")
 		p.logger.Error(err.Error())

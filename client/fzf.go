@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 
@@ -13,11 +14,14 @@ func NewFZFClient() Client {
 	return FZFClient{}
 }
 
-func (b FZFClient) Start(socketName string) error {
-	return SubscribeToSocket(b.set)(socketName)
+func (b FZFClient) Start(ctx context.Context, socketName string) error {
+	return SubscribeToSocket(
+		ctx,
+		SetterWithContext(b.set, "fzf"),
+	)(socketName)
 }
 
-func (b FZFClient) set(theme ThemeVariant) error {
+func (b FZFClient) set(ctx context.Context, theme ThemeVariant) error {
 	config, err := GetConfig()
 	if err != nil {
 		return err

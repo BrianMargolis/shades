@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -12,13 +13,14 @@ func NewBtopClient() Client {
 	return BtopClient{}
 }
 
-func (b BtopClient) Start(
-	socket string,
-) error {
-	return SubscribeToSocket(b.set)(socket)
+func (b BtopClient) Start(ctx context.Context, socket string) error {
+	return SubscribeToSocket(
+		ctx,
+		SetterWithContext(b.set, "btop"),
+	)(socket)
 }
 
-func (b BtopClient) set(theme ThemeVariant) error {
+func (b BtopClient) set(ctx context.Context, theme ThemeVariant) error {
 	config, err := GetConfig()
 	if err != nil {
 		return err
