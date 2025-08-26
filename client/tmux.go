@@ -19,10 +19,13 @@ func (t TMUXClient) Start(ctx context.Context, socket string) error {
 }
 
 func (t TMUXClient) set(ctx context.Context, theme ThemeVariant) error {
+	logger := LoggerFromContext(ctx)
+
 	config, err := GetConfig()
 	if err != nil {
 		return err
 	}
+
 	for _, optionName := range []string{
 		"status-bg",
 		"status-fg",
@@ -32,7 +35,10 @@ func (t TMUXClient) set(ctx context.Context, theme ThemeVariant) error {
 		"status-right",
 	} {
 		template := config.Client["tmux"][optionName]
+
 		value := DoTemplate(template, theme)
+		logger = logger.With("option", optionName, "value", value)
+		logger.Debug("setting tmux option...")
 
 		err := t.setTMUXOption(optionName, value)
 		if err != nil {
@@ -47,11 +53,13 @@ func (t TMUXClient) setTMUXOption(optionName, value string) error {
 	logger := LoggerFromContext(context.Background())
 	tmuxPath, err := LookPath("tmux")
 	if err != nil {
+		logger.Errorw("tmux executable not found", "error", err)
 		return err
 	}
 
 	cmd := []string{"set-option", "-g", optionName, value}
 	logger = logger.With("tmuxPath", tmuxPath, "cmd", cmd)
-	logger.Debug("setting tmux option...")
+	logger.Debug("executing tmux command...")
+	// TODO: replace this, and all others, with something that grabs stdout/stderr for logging
 	return exec.Command(tmuxPath, cmd...).Run()
 }
