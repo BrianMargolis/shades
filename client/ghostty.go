@@ -49,13 +49,16 @@ func (a GhosttyClient) set(ctx context.Context, theme ThemeVariant) error {
 	// TODO: send USR2 signal to ghostty to reload config once that's landed:
 	// https://github.com/ghostty-org/ghostty/discussions/3643#discussioncomment-13899379
 	// in the meantime, this works, but requires the user to grant shades accessibility permissions:
-	RunApplescript(`
+	output, err := RunApplescript(`
 		tell application "System Events"
 			tell process "Ghostty"
 					click menu item "Reload Configuration" of menu "Ghostty" of menu bar item "Ghostty" of menu bar 1
 			end tell
 		end tell`,
 	)
+	if err != nil {
+		logger.With("output", string(output)).Error("failed to reload ghostty config via applescript", "error", err)
+	}
 
 	logger.Info("updated ghostty config file")
 	return nil
