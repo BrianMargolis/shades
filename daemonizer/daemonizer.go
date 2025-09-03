@@ -42,6 +42,7 @@ func getEnabledComponents(config client.ConfigModel) []string {
 		"btop",
 		"claude",
 		"fzf",
+		"ghostty",
 		"mac",
 		"tmux",
 	}

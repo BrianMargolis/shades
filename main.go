@@ -82,6 +82,7 @@ func main() {
 		"claude":        client.NewClaudeClient(),
 		"debug":         client.NewDebugClient(),
 		"fzf":           client.NewFZFClient(),
+		"ghostty":       client.NewGhosttyClient(),
 		"mac":           client.NewMacClient(),
 		"mac-wallpaper": client.NewMacWallpaperClient(),
 		"tmux":          client.NewTMUXClient(),
