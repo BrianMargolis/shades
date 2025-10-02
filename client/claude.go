@@ -23,6 +23,8 @@ func (b ClaudeClient) Start(ctx context.Context, socketName string) error {
 }
 
 func (b ClaudeClient) set(ctx context.Context, theme ThemeVariant) error {
+	// TODO: this does not work anymore, they removed `config` from the CLI. think this needs to invoke claude, send /config, navigate the TUI, etc... awful
+	return nil
 	themeStr := "dark"
 	if theme.Light {
 		themeStr = "light"
