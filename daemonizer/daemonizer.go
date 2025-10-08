@@ -79,6 +79,7 @@ func installConfigs(selectedChoices []string, verbose bool) error {
 		return err
 	}
 
+	// TODO: improve this with a poll
 	time.Sleep(2 * time.Second) // wait for the server to start before we get the clients going
 	err = reloadPlist(clientsPlistPath)
 	if err != nil {
