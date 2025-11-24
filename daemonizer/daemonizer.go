@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -15,13 +14,13 @@ import (
 
 func validateDependencies() error {
 	// validate shades is installed
-	err := exec.Command("which", "shades").Run()
+	_, err := client.Run("which", "shades")
 	if err != nil {
 		return errors.New("shades not found in GOPATH/bin")
 	}
 
 	// validate launchctl exists
-	err = exec.Command("which", "launchctl").Run()
+	_, err = client.Run("which", "launchctl")
 	if err != nil {
 		return errors.New("launchctl not found")
 	}
@@ -135,9 +134,9 @@ func writePlistFile(path, content string) error {
 
 func reloadPlist(path string) error {
 	// fine if the unload fails
-	exec.Command("launchctl", "unload", path).Run()
+	client.Run("launchctl", "unload", path)
 	// not fine if the load fails though
-	err := exec.Command("launchctl", "load", path).Run()
+	_, err := client.Run("launchctl", "load", path)
 	return errors.Wrap(err, "error loading plist file")
 }
 

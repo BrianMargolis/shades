@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"os/exec"
 )
 
 type TMUXClient struct{}
@@ -57,9 +56,6 @@ func (t TMUXClient) setTMUXOption(optionName, value string) error {
 		return err
 	}
 
-	cmd := []string{"set-option", "-g", optionName, value}
-	logger = logger.With("tmuxPath", tmuxPath, "cmd", cmd)
-	logger.Debug("executing tmux command...")
-	// TODO: replace this, and all others, with something that grabs stdout/stderr for logging
-	return exec.Command(tmuxPath, cmd...).Run()
+	_, err = Run(tmuxPath, "set-option", "-g", optionName, value)
+	return err
 }

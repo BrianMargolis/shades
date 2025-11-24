@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 )
 
 type GhosttyClient struct{}
@@ -48,13 +47,8 @@ func (a GhosttyClient) set(ctx context.Context, theme ThemeVariant) error {
 	}
 
 	// send USR2 signal to ghostty process to reload config
-	cmd := exec.Command("pkill", "-USR2", "ghostty")
-	err = cmd.Run()
+	_, err = Run("pkill", "-USR2", "ghostty")
 	if err != nil {
-		stdout := cmd.Stdout
-		stderr := cmd.Stderr
-		logger.With("stdout", stdout, "stderr", stderr).Debug("failed pkill command output")
-		logger.Error("failed to send USR2 signal to ghostty", "error", err)
 		return err
 	}
 

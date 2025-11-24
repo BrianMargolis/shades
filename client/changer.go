@@ -3,7 +3,6 @@ package client
 import (
 	"brianmargolis/shades/protocol"
 	"context"
-	"os/exec"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -57,7 +56,7 @@ func (c TogglerClient) Start(ctx context.Context, socketName string) error {
 func (c TogglerClient) getCurrentTheme() (string, error) {
 	script := `tell application "System Events" to tell appearance preferences to get dark mode`
 
-	output, err := exec.Command("osascript", "-e", script).Output()
+	output, err := RunApplescript(script)
 	if err != nil {
 		return "", err
 	}

@@ -35,7 +35,8 @@ func (b ClaudeClient) set(ctx context.Context, theme ThemeVariant) error {
 		return errors.Wrap(err, "finding claude binary")
 	}
 
-	return exec.Command(claudePath, "config", "set", "-g", "theme", themeStr).Run()
+	_, err = Run(claudePath, "config", "set", "-g", "theme", themeStr)
+	return err
 }
 
 func (b ClaudeClient) findClaudeBinary(ctx context.Context) (string, error) {

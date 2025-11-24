@@ -7,7 +7,6 @@ import (
 	"context"
 	"net"
 	"os"
-	"os/exec"
 	"os/signal"
 	"strings"
 	"sync"
@@ -157,7 +156,7 @@ func whisper(ctx context.Context, mutex *sync.Mutex, conn net.Conn, msg []byte) 
 func isCurrentlyDark() (bool, error) {
 	script := `tell application "System Events" to tell appearance preferences to get dark mode`
 
-	output, err := exec.Command("osascript", "-e", script).Output()
+	output, err := client.RunApplescript(script)
 	if err != nil {
 		return false, err
 	}

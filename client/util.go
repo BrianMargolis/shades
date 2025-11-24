@@ -13,7 +13,12 @@ import (
 
 // RunApplescript runs an AppleScript command and returns the output.
 func RunApplescript(script string) ([]byte, error) {
-	return exec.Command("osascript", "-e", script).CombinedOutput()
+	return Run("osascript", "-e", script)
+}
+
+// Run returns a command's output and error (if any).
+func Run(name string, args ...string) ([]byte, error) {
+	return exec.Command(name, args...).CombinedOutput()
 }
 
 func ReplaceAtTag(
