@@ -17,6 +17,8 @@ import (
 type PickerOpts struct {
 	SocketPath string
 	UseTmux    bool
+	OnlyDark   bool
+	OnlyLight  bool
 }
 
 type Picker interface {
@@ -65,7 +67,7 @@ func (p *picker) pick(opts PickerOpts) (result string, err error) {
 	}
 	p.logger.Debugw("config", "config", config)
 
-	pickerOptions := p.getOptions(config)
+	pickerOptions := p.getOptions(config, opts)
 	p.logger.Debugw("options", "options", pickerOptions)
 
 	fzfPath, err := client.LookPath(p.getCommand(opts))
@@ -143,10 +145,16 @@ func (p *picker) getCommand(opts PickerOpts) string {
 	return "fzf"
 }
 
-func (*picker) getOptions(config client.ConfigModel) []string {
+func (*picker) getOptions(config client.ConfigModel, opts PickerOpts) []string {
 	pickerOptions := []string{}
 	for themeName, theme := range config.Themes {
-		for variantName, _ := range theme.Variants {
+		for variantName, variant := range theme.Variants {
+			if opts.OnlyLight && !variant.Light {
+				continue
+			}
+			if opts.OnlyDark && variant.Light {
+				continue
+			}
 			pickerOptions = append(pickerOptions, fmt.Sprintf("%s;%s", themeName, variantName))
 		}
 	}

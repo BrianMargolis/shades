@@ -140,13 +140,32 @@ func main() {
 		}
 		client.ChangerClient{Theme: args[1]}.Start(ctx, socketPath)
 	case "i", "interactive":
+		useTmux := false
+		onlyLight := false
+		onlyDark := false
+
+		for i := 1; i < len(args); i++ {
+			switch args[i] {
+			case "--tmux":
+				useTmux = true
+			case "-l", "--light":
+				onlyLight = true
+			case "-d", "--dark":
+				onlyDark = true
+			}
+		}
+		if onlyLight && onlyDark {
+			logger.Fatal("cannot specify both only-light and only-dark")
+		}
+
 		_, err := picker.NewPicker(logger).Start(picker.PickerOpts{
 			SocketPath: socketPath,
-			// TODO: get a little more sophisticated with this
-			UseTmux: len(args) > 1 && args[1] == "--tmux",
+			UseTmux:    useTmux,
+			OnlyDark:   onlyDark,
+			OnlyLight:  onlyLight,
 		})
 		if err != nil {
-			panic(err)
+			logger.Fatal(err.Error())
 		}
 	case "p", "preview":
 		if len(args) < 1 {
