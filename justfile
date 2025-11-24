@@ -1,8 +1,6 @@
 init-logs:
   # creating a log directory if it doesn't exist already
-  sudo mkdir /var/log/shades || true
-  # taking ownership of the log directory
-  sudo chown $(whoami) /var/log/shades
+  if [ ! -d /var/log/shades ]; then sudo mkdir /var/log/shades && sudo chown $(whoami) /var/log/shades; fi
 
 install: init-logs
   # install the binary and run the daemonizer utility
