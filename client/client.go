@@ -94,14 +94,13 @@ func SetterWithContext(
 func SubscribeToSocket(
 	setter func(theme ThemeVariant) error,
 ) func(string) error {
-
 	return func(socketName string) error {
 		read, write, err := SocketAsChannel(socketName)
 		if err != nil {
 			return err
 		}
 
-		write <- string(protocol.Subscribe("mac"))
+		write <- string(protocol.Subscribe("client"))
 
 		for message := range read {
 			verb, noun, err := protocol.Parse(message)
@@ -112,7 +111,7 @@ func SubscribeToSocket(
 			if verb == "set" {
 				config, err := GetConfig()
 				if err != nil {
-					panic(err)
+					return err
 				}
 
 				themeAndVariant := strings.TrimSpace(noun)
