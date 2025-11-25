@@ -2,6 +2,8 @@ package client
 
 import (
 	"context"
+
+	"go.uber.org/zap"
 )
 
 type TMUXClient struct{}
@@ -10,15 +12,12 @@ func NewTMUXClient() Client {
 	return TMUXClient{}
 }
 
-func (t TMUXClient) Start(ctx context.Context, socket string) error {
-	return SubscribeToSocket(
-		ctx,
-		SetterWithContext(t.set, "tmux"),
-	)(socket)
+func (t TMUXClient) Start(socket string) error {
+	return SubscribeToSocket(t.set)(socket)
 }
 
-func (t TMUXClient) set(ctx context.Context, theme ThemeVariant) error {
-	logger := LoggerFromContext(ctx)
+func (t TMUXClient) set(theme ThemeVariant) error {
+	logger := zap.S()
 
 	config, err := GetConfig()
 	if err != nil {

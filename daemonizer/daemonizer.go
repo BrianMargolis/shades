@@ -10,6 +10,7 @@ import (
 	"brianmargolis/shades/client"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 func validateDependencies() error {
@@ -147,7 +148,7 @@ func main() {
 	for _, arg := range args {
 		switch arg {
 		case "-u":
-			log.Fatal("Uninstall functionality not yet implemented in config-driven mode")
+			zap.L().Fatal("Uninstall functionality not yet implemented in config-driven mode")
 		case "-v":
 			verbose = true
 		}
@@ -156,13 +157,13 @@ func main() {
 	// validate dependencies
 	err := validateDependencies()
 	if err != nil {
-		log.Fatal(err)
+		zap.S().Fatal("failed to validate dependencies", err)
 	}
 
 	// load configuration
 	config, err := client.GetConfig()
 	if err != nil {
-		log.Fatal("Failed to load config:", err)
+		zap.S().Fatal("failed to load config", err)
 	}
 
 	// get enabled components from config

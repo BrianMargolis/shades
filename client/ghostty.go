@@ -1,9 +1,10 @@
 package client
 
 import (
-	"context"
 	"fmt"
 	"os"
+
+	"go.uber.org/zap"
 )
 
 type GhosttyClient struct{}
@@ -12,19 +13,16 @@ func NewGhosttyClient() Client {
 	return GhosttyClient{}
 }
 
-func (a GhosttyClient) Start(ctx context.Context, socket string) error {
-	return SubscribeToSocket(
-		ctx,
-		SetterWithContext(a.set, "ghostty"),
-	)(socket)
+func (a GhosttyClient) Start(socket string) error {
+	return SubscribeToSocket(a.set)(socket)
 }
 
-func (a GhosttyClient) set(ctx context.Context, theme ThemeVariant) error {
+func (a GhosttyClient) set(theme ThemeVariant) error {
 	config, err := GetConfig()
 	if err != nil {
 		return err
 	}
-	logger := LoggerFromContext(ctx)
+	logger := zap.S()
 	logger = logger.With("theme", theme.ThemeName, "variant", theme.VariantName)
 
 	path := ExpandTilde(config.Client["ghostty"]["path"])

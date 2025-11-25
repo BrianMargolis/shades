@@ -25,57 +25,56 @@ type Picker interface {
 	Start(PickerOpts) (result string, err error)
 }
 
-type picker struct {
-	logger *zap.SugaredLogger
-}
+type picker struct{}
 
-func NewPicker(
-	logger *zap.Logger,
-) Picker {
+func NewPicker() Picker {
 	zap.S().Info("NewPicker")
-	return &picker{
-		logger: logger.Sugar(),
-	}
+	return &picker{}
 }
 
 func (p *picker) Start(opts PickerOpts) (result string, err error) {
-	p.logger.Debug("Start")
+	logger := zap.S()
+	logger.Debug("Start")
 	// TODO:
 	// first, get the current theme - if the user bails without picking a theme,
 	// we want to restore that theme as the previewer will have changed it
 
-	result, err = p.pick(opts)
+	result, err = p.pick(logger, opts)
 	if err != nil {
 		err = errors.Wrap(err, "failed to pick")
-		p.logger.Error(err.Error())
+		logger.Error(err.Error())
 		return
 	}
 
 	err = client.ChangerClient{Theme: result}.Start(context.Background(), opts.SocketPath)
 	if err != nil {
 		err = errors.Wrap(err, "failed to start ChangerClient")
-		p.logger.Error(err.Error())
+		logger.Error(err.Error())
 	}
 	return
 }
 
-func (p *picker) pick(opts PickerOpts) (result string, err error) {
+func (p *picker) pick(
+	logger *zap.SugaredLogger,
+	opts PickerOpts,
+) (result string, err error) {
+
 	config, err := client.GetConfig()
 	if err != nil {
 		err = errors.Wrap(err, "failed to get config")
 		return
 	}
-	p.logger.Debugw("config", "config", config)
+	logger.Debugw("config", "config", config)
 
 	pickerOptions := p.getOptions(config, opts)
-	p.logger.Debugw("options", "options", pickerOptions)
+	logger.Debugw("options", "options", pickerOptions)
 
 	fzfPath, err := client.LookPath(p.getCommand(opts))
 	if err != nil {
 		err = errors.Wrap(err, "failed to get fzf executable path")
 		return
 	}
-	p.logger.Debugw("fzfPath", "fzfPath", fzfPath)
+	logger.Debugw("fzfPath", "fzfPath", fzfPath)
 
 	fzfOptions := []string{
 		"--height=44",

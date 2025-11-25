@@ -1,21 +1,16 @@
 package client
 
-import "context"
-
 type MacWallpaperClient struct{}
 
 func NewMacWallpaperClient() Client {
 	return MacWallpaperClient{}
 }
 
-func (m MacWallpaperClient) Start(ctx context.Context, socketName string) error {
-	return SubscribeToSocket(
-		ctx,
-		SetterWithContext(m.set, "mac-wallpaper"),
-	)(socketName)
+func (m MacWallpaperClient) Start(socketName string) error {
+	return SubscribeToSocket(m.set)(socketName)
 }
 
-func (m MacWallpaperClient) set(ctx context.Context, theme ThemeVariant) error {
+func (m MacWallpaperClient) set(theme ThemeVariant) error {
 	config, err := GetConfig()
 	if err != nil {
 		return err

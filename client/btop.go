@@ -1,10 +1,10 @@
 package client
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 type BtopClient struct{}
@@ -13,15 +13,12 @@ func NewBtopClient() Client {
 	return BtopClient{}
 }
 
-func (b BtopClient) Start(ctx context.Context, socket string) error {
-	return SubscribeToSocket(
-		ctx,
-		SetterWithContext(b.set, "btop"),
-	)(socket)
+func (b BtopClient) Start(socket string) error {
+	return SubscribeToSocket(b.set)(socket)
 }
 
-func (b BtopClient) set(ctx context.Context, theme ThemeVariant) error {
-	logger := LoggerFromContext(ctx)
+func (b BtopClient) set(theme ThemeVariant) error {
+	logger := zap.S()
 
 	config, err := GetConfig()
 	if err != nil {

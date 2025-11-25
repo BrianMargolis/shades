@@ -13,13 +13,10 @@ type Previewer interface {
 }
 
 type previewer struct {
-	logger *zap.Logger
 }
 
-func NewPreviewer(logger *zap.Logger) Previewer {
-	return &previewer{
-		logger: logger,
-	}
+func NewPreviewer() Previewer {
+	return &previewer{}
 }
 
 func (p *previewer) Preview(theme client.ThemeVariant) (string, error) {
@@ -32,7 +29,7 @@ func (p *previewer) Preview(theme client.ThemeVariant) (string, error) {
 			continue
 		}
 		r, g, b := hexToRGB(hexCode)
-		p.logger.Debug(
+		zap.S().Debug(
 			"color swatch",
 			zap.String("theme", theme.ThemeName),
 			zap.Int("r", r),

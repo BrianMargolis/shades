@@ -1,12 +1,12 @@
 package client
 
 import (
-	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 type ClaudeClient struct{}
@@ -15,14 +15,11 @@ func NewClaudeClient() Client {
 	return ClaudeClient{}
 }
 
-func (b ClaudeClient) Start(ctx context.Context, socketName string) error {
-	return SubscribeToSocket(
-		ctx,
-		SetterWithContext(b.set, "claude"),
-	)(socketName)
+func (b ClaudeClient) Start(socketName string) error {
+	return SubscribeToSocket(b.set)(socketName)
 }
 
-func (b ClaudeClient) set(ctx context.Context, theme ThemeVariant) error {
+func (b ClaudeClient) set(theme ThemeVariant) error {
 	// TODO: this does not work anymore, they removed `config` from the CLI. think this needs to invoke claude, send /config, navigate the TUI, etc... awful
 	return nil
 	themeStr := "dark"
@@ -30,7 +27,7 @@ func (b ClaudeClient) set(ctx context.Context, theme ThemeVariant) error {
 		themeStr = "light"
 	}
 
-	claudePath, err := b.findClaudeBinary(ctx)
+	claudePath, err := b.findClaudeBinary()
 	if err != nil {
 		return errors.Wrap(err, "finding claude binary")
 	}
@@ -39,8 +36,8 @@ func (b ClaudeClient) set(ctx context.Context, theme ThemeVariant) error {
 	return err
 }
 
-func (b ClaudeClient) findClaudeBinary(ctx context.Context) (string, error) {
-	logger := LoggerFromContext(ctx)
+func (b ClaudeClient) findClaudeBinary() (string, error) {
+	logger := zap.S()
 
 	claudePath, err := exec.LookPath("claude")
 	if err == nil {

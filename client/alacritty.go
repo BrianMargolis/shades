@@ -1,12 +1,12 @@
 package client
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 type AlacrittyClient struct{}
@@ -15,19 +15,16 @@ func NewAlacrittyClient() Client {
 	return AlacrittyClient{}
 }
 
-func (a AlacrittyClient) Start(ctx context.Context, socket string) error {
-	return SubscribeToSocket(
-		ctx,
-		SetterWithContext(a.set, "alacritty"),
-	)(socket)
+func (a AlacrittyClient) Start(socket string) error {
+	return SubscribeToSocket(a.set)(socket)
 }
 
-func (a AlacrittyClient) set(ctx context.Context, theme ThemeVariant) error {
+func (a AlacrittyClient) set(theme ThemeVariant) error {
 	config, err := GetConfig()
 	if err != nil {
 		return err
 	}
-	logger := LoggerFromContext(ctx)
+	logger := zap.S()
 	logger = logger.With("theme", theme.ThemeName, "variant", theme.VariantName)
 
 	themeConfigPath := ExpandTilde(config.Client["alacritty"]["alacritty-config-path"])

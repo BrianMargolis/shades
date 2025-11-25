@@ -2,7 +2,8 @@ package client
 
 import (
 	"brianmargolis/shades/protocol"
-	"context"
+
+	"go.uber.org/zap"
 )
 
 type DebugClient struct{}
@@ -11,8 +12,8 @@ func NewDebugClient() Client {
 	return DebugClient{}
 }
 
-func (d DebugClient) Start(ctx context.Context, socket string) error {
-	logger := LoggerFromContext(ctx)
+func (d DebugClient) Start(socket string) error {
+	logger := zap.S()
 	logger.Debug("Starting debug client")
 	read, write, err := SocketAsChannel(socket)
 	if err != nil {

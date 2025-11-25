@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 // RunApplescript runs an AppleScript command and returns the output.
@@ -18,7 +20,31 @@ func RunApplescript(script string) ([]byte, error) {
 
 // Run returns a command's output and error (if any).
 func Run(name string, args ...string) ([]byte, error) {
-	return exec.Command(name, args...).CombinedOutput()
+	logger := zap.S()
+	logger = logger.With("command", name, "args", args)
+
+	logger.Debug("running command")
+	c := exec.Command(name, args...)
+
+	// tee stdout and stderr off to a unified buffer
+	var stdout, stderr, combined bytes.Buffer
+	c.Stdout = io.MultiWriter(&stdout, &combined)
+	c.Stderr = io.MultiWriter(&stderr, &combined)
+
+	err := c.Run()
+	exitCode := c.ProcessState.ExitCode()
+	logger = logger.With(
+		"exitCode", exitCode,
+		"stdout", stdout.String(),
+		"stderr", stderr.String(),
+	)
+	if err != nil {
+		logger.Error("command failed", "err", err)
+	} else {
+		logger.Debug("command succeeded")
+	}
+
+	return combined.Bytes(), err
 }
 
 func ReplaceAtTag(

@@ -46,34 +46,21 @@ const socketPath = "/tmp/theme-change.sock"
 const verbose = false
 
 func main() {
-
 	args := os.Args[1:]
 	mode := "toggle"
 	if len(args) > 0 {
 		mode = args[0]
 	}
 
+	logger := initLogger().Sugar()
+	logger.Info("shades started", "mode", mode, "args", args)
+
 	config, err := client.GetConfig()
 	if err != nil {
-		panic(err)
+		logger.Fatal("error loading config", zap.Error(err))
 	}
-
-	logger, err := zap.Config{
-		Level:            zap.NewAtomicLevelAt(zap.DebugLevel),
-		Development:      true,
-		Encoding:         "console",
-		EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
-		OutputPaths:      []string{"/var/log/shades/shades.log"},
-		ErrorOutputPaths: []string{"/var/log/shades/shades.error.log"},
-	}.Build(zap.AddStacktrace(zapcore.ErrorLevel))
-	if err != nil {
-		panic(err)
-	}
-
-	logger.Info("shades started", zap.Strings("args", args))
 
 	ctx := context.Background()
-	ctx = client.WithLogger(ctx, logger.Sugar())
 
 	var CLIENTS = map[string]client.Client{
 		"alacritty":     client.NewAlacrittyClient(),
@@ -106,9 +93,9 @@ func main() {
 					fmt.Printf("no such client %s, ignoring\n", clientName)
 				}
 
-				err := client.Start(ctx, socketPath)
+				err := client.Start(socketPath)
 				if err != nil {
-					panic(err)
+					logger.Fatal("error starting client", zap.String("client", clientName), zap.Error(err))
 				}
 			}(clientName)
 		}
@@ -121,7 +108,7 @@ func main() {
 			}
 		}
 	case "-s":
-		NewServer().Start(ctx, socketPath)
+		NewServer().Start(socketPath)
 	case "dark", "d":
 		changer := client.ChangerClient{Theme: config.DefaultDarkTheme}
 		changer.Start(ctx, socketPath)
@@ -158,7 +145,7 @@ func main() {
 			logger.Fatal("cannot specify both only-light and only-dark")
 		}
 
-		_, err := picker.NewPicker(logger).Start(picker.PickerOpts{
+		_, err := picker.NewPicker().Start(picker.PickerOpts{
 			SocketPath: socketPath,
 			UseTmux:    useTmux,
 			OnlyDark:   onlyDark,
@@ -176,10 +163,28 @@ func main() {
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
-		swatches, err := preview.NewPreviewer(logger).Preview(theme)
+		swatches, err := preview.NewPreviewer().Preview(theme)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
 		fmt.Println(swatches)
 	}
+}
+
+func initLogger() *zap.Logger {
+	logger, err := zap.Config{
+		Level:            zap.NewAtomicLevelAt(zap.DebugLevel),
+		Development:      true,
+		Encoding:         "console",
+		EncoderConfig:    zap.NewDevelopmentEncoderConfig(),
+		OutputPaths:      []string{"/var/log/shades/shades.log"},
+		ErrorOutputPaths: []string{"/var/log/shades/shades.error.log"},
+	}.Build(zap.AddStacktrace(zapcore.ErrorLevel))
+	if err != nil {
+		panic(err)
+	}
+	// set a global logger, it's a fine crutch for a package this small and
+	// avoids considerable plumbing
+	zap.ReplaceGlobals(logger)
+	return logger
 }

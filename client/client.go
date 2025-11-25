@@ -12,7 +12,7 @@ import (
 )
 
 type Client interface {
-	Start(ctx context.Context, socket string) error
+	Start(csocket string) error
 }
 
 type ClientConstructor func() Client
@@ -72,38 +72,27 @@ func LoggerFromContext(ctx context.Context) *zap.SugaredLogger {
 
 // SetterWithContext wraps a theme setter function with context-based logging
 func SetterWithContext(
-	setter func(context.Context, ThemeVariant) error,
+	setter func(ThemeVariant) error,
 	clientName string,
-) func(context.Context, ThemeVariant) error {
-	return func(ctx context.Context, theme ThemeVariant) error {
-		logger := LoggerFromContext(ctx)
+) func(ThemeVariant) error {
+	return func(theme ThemeVariant) error {
+		logger := zap.S()
 
-		// sneak the client name into the logger, hehehe
 		logger = logger.With("client", clientName, "theme", theme.ThemeName, "variant", theme.VariantName)
-		ctx = WithLogger(ctx, logger)
 
-		err := setter(ctx, theme)
-		if err != nil && logger != nil {
-			logger.Errorw("Error setting theme",
-				"error", err,
-				"client", clientName,
-				"theme", theme.ThemeName,
-				"variant", theme.VariantName,
-			)
-		}
-
+		err := setter(theme)
 		if err != nil {
-			return errors.Wrapf(err, "setting %s theme", clientName)
+			err = errors.Wrapf(err, "failed to set %s theme", clientName)
+			logger.Errorw("Error setting theme", "err", err)
 		}
-		return nil
+		return err
 	}
 }
 
 // SubscribeToSocket is a simple way to build a client if you don't need the
 // propose or get functionalities.
 func SubscribeToSocket(
-	ctx context.Context,
-	setter func(ctx context.Context, theme ThemeVariant) error,
+	setter func(theme ThemeVariant) error,
 ) func(string) error {
 
 	return func(socketName string) error {
@@ -132,7 +121,7 @@ func SubscribeToSocket(
 					return err
 				}
 
-				if err = setter(ctx, themeVariant); err != nil {
+				if err = setter(themeVariant); err != nil {
 					return err
 				}
 			}
