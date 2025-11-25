@@ -53,7 +53,7 @@ func main() {
 	}
 
 	logger := initLogger().Sugar()
-	logger.Info("shades started", "mode", mode, "args", args)
+	logger.With("mode", mode, "args", args).Info("starting shades")
 
 	config, err := client.GetConfig()
 	if err != nil {
