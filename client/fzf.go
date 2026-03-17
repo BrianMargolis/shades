@@ -35,5 +35,10 @@ func (b FZFClient) set(theme ThemeVariant) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to set _ZO_FZF_OPTS")
 	}
+
+	// Propagate to the tmux global environment so display-popup sessions
+	// (which don't inherit fish universal variables) pick up the new colors.
+	_, _ = Run("tmux", "set-environment", "-g", "FZF_DEFAULT_OPTS", fzfTheme)
+
 	return nil
 }
