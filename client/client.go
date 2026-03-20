@@ -104,25 +104,30 @@ func SubscribeToSocket(
 		for message := range read {
 			verb, noun, err := protocol.Parse(message)
 			if err != nil {
-				return err
+				zap.S().Warnw("failed to parse message from server, skipping", "message", message, "error", err)
+				continue
 			}
 
-			if verb == "set" {
-				config, err := GetConfig()
-				if err != nil {
-					return err
-				}
-
-				themeAndVariant := strings.TrimSpace(noun)
-				themeVariant, err := config.Themes.GetVariant(themeAndVariant)
-				if err != nil {
-					return err
-				}
-
-				if err = setter(themeVariant); err != nil {
-					return err
-				}
+			if verb != "set" {
+				continue
 			}
+
+			config, err := GetConfig()
+			if err != nil {
+				zap.S().Warnw("failed to load config, skipping theme change", "error", err)
+				continue
+			}
+
+			themeAndVariant := strings.TrimSpace(noun)
+			themeVariant, err := config.Themes.GetVariant(themeAndVariant)
+			if err != nil {
+				zap.S().Warnw("unknown theme variant, skipping", "themeAndVariant", themeAndVariant, "error", err)
+				continue
+			}
+
+			// SetterWithContext already logs the error; just continue so the client
+			// stays alive for the next theme change
+			setter(themeVariant) //nolint:errcheck
 		}
 
 		return nil
