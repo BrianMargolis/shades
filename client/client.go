@@ -70,22 +70,21 @@ func LoggerFromContext(ctx context.Context) *zap.SugaredLogger {
 	return zap.NewNop().Sugar()
 }
 
-// SetterWithContext wraps a theme setter function with context-based logging
+// SetterWithContext wraps a theme setter function with consistent success/failure logging.
+// Individual set() implementations should log a debug line and return errors without
+// logging them — this function owns the Info/Error at the boundary.
 func SetterWithContext(
 	setter func(ThemeVariant) error,
 	clientName string,
 ) func(ThemeVariant) error {
 	return func(theme ThemeVariant) error {
-		logger := zap.S()
-
-		logger = logger.With("client", clientName, "theme", theme.ThemeName, "variant", theme.VariantName)
-
-		err := setter(theme)
-		if err != nil {
-			err = errors.Wrapf(err, "failed to set %s theme", clientName)
-			logger.Errorw("Error setting theme", "err", err)
+		logger := zap.S().With("client", clientName, "theme", theme.ThemeName, "variant", theme.VariantName)
+		if err := setter(theme); err != nil {
+			logger.Errorw("failed to apply theme", "error", err)
+			return errors.Wrapf(err, "failed to set %s theme", clientName)
 		}
-		return err
+		logger.Info("applied theme")
+		return nil
 	}
 }
 

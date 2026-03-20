@@ -13,23 +13,19 @@ func NewDebugClient() Client {
 }
 
 func (d DebugClient) Start(socket string) error {
-	logger := zap.S()
-	logger.Debug("Starting debug client")
+	logger := zap.S().With("client", "debug")
 	read, write, err := SocketAsChannel(socket)
 	if err != nil {
 		return err
 	}
 
-	logger.Debug("subscribing to debug messages...")
 	write <- string(protocol.Subscribe("debug"))
-	logger.Debug("subscribed to debug messages")
+	logger.Debug("subscribed, waiting for messages")
 
 	for message := range read {
-		logger.With("message", message).Debug("protocol message received")
+		logger.Debugw("received message", "message", message)
 	}
 
-	logger.Debug("unsubscribing from debug messages...")
-	write <- string(protocol.Unsubscribe())
-	logger.Debug("unsubscribed from debug messages")
+	logger.Debug("server closed connection")
 	return nil
 }

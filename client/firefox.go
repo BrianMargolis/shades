@@ -15,7 +15,7 @@ func NewFirefoxClient() Client {
 }
 
 func (f FirefoxClient) Start(socket string) error {
-	return SubscribeToSocket(f.set)(socket)
+	return SubscribeToSocket(SetterWithContext(f.set, "firefox"))(socket)
 }
 
 func (f FirefoxClient) set(theme ThemeVariant) error {
@@ -24,10 +24,8 @@ func (f FirefoxClient) set(theme ThemeVariant) error {
 		return err
 	}
 
-	logger := zap.S().With("theme", theme.ThemeName, "variant", theme.VariantName)
-
 	themePath := ExpandTilde(config.Client["firefox"]["theme-path"])
-	logger = logger.With("path", themePath)
+	zap.S().Debugw("applying theme", "client", "firefox", "theme", theme.ThemeName, "variant", theme.VariantName, "themePath", themePath)
 
 	var sb strings.Builder
 	sb.WriteString(":root {\n")
@@ -40,6 +38,5 @@ func (f FirefoxClient) set(theme ThemeVariant) error {
 		return fmt.Errorf("failed to write firefox theme: %w", err)
 	}
 
-	logger.Info("updated firefox theme")
 	return nil
 }

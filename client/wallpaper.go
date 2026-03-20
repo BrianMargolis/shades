@@ -1,5 +1,7 @@
 package client
 
+import "go.uber.org/zap"
+
 type MacWallpaperClient struct{}
 
 func NewMacWallpaperClient() Client {
@@ -7,7 +9,7 @@ func NewMacWallpaperClient() Client {
 }
 
 func (m MacWallpaperClient) Start(socketName string) error {
-	return SubscribeToSocket(m.set)(socketName)
+	return SubscribeToSocket(SetterWithContext(m.set, "mac-wallpaper"))(socketName)
 }
 
 func (m MacWallpaperClient) set(theme ThemeVariant) error {
@@ -16,14 +18,12 @@ func (m MacWallpaperClient) set(theme ThemeVariant) error {
 		return err
 	}
 
-	dark := config.Client["mac-wallpaper"]["dark"]
-	light := config.Client["mac-wallpaper"]["light"]
-	wallpaperPath := dark
+	wallpaperPath := ExpandTilde(config.Client["mac-wallpaper"]["dark"])
 	if theme.Light {
-		wallpaperPath = light
+		wallpaperPath = ExpandTilde(config.Client["mac-wallpaper"]["light"])
 	}
 
-	wallpaperPath = ExpandTilde(wallpaperPath)
+	zap.S().Debugw("applying theme", "client", "mac-wallpaper", "theme", theme.ThemeName, "variant", theme.VariantName, "wallpaperPath", wallpaperPath)
 
 	script := `tell application "Finder" to set desktop picture to POSIX file "` + wallpaperPath + `"`
 	_, err = RunApplescript(script)

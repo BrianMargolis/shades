@@ -1,8 +1,6 @@
 package client
 
 import (
-	"context"
-
 	"go.uber.org/zap"
 )
 
@@ -13,12 +11,10 @@ func NewTMUXClient() Client {
 }
 
 func (t TMUXClient) Start(socket string) error {
-	return SubscribeToSocket(t.set)(socket)
+	return SubscribeToSocket(SetterWithContext(t.set, "tmux"))(socket)
 }
 
 func (t TMUXClient) set(theme ThemeVariant) error {
-	logger := zap.S()
-
 	config, err := GetConfig()
 	if err != nil {
 		return err
@@ -33,13 +29,10 @@ func (t TMUXClient) set(theme ThemeVariant) error {
 		"status-right",
 	} {
 		template := config.Client["tmux"][optionName]
-
 		value := DoTemplate(template, theme)
-		logger = logger.With("option", optionName, "value", value)
-		logger.Debug("setting tmux option...")
+		zap.S().Debugw("setting tmux option", "option", optionName)
 
-		err := t.setTMUXOption(optionName, value)
-		if err != nil {
+		if err := t.setTMUXOption(optionName, value); err != nil {
 			return err
 		}
 	}
@@ -48,10 +41,9 @@ func (t TMUXClient) set(theme ThemeVariant) error {
 }
 
 func (t TMUXClient) setTMUXOption(optionName, value string) error {
-	logger := LoggerFromContext(context.Background())
 	tmuxPath, err := LookPath("tmux")
 	if err != nil {
-		logger.Errorw("tmux executable not found", "error", err)
+		zap.S().Errorw("tmux executable not found", "error", err)
 		return err
 	}
 

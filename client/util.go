@@ -32,13 +32,12 @@ func Run(name string, args ...string) ([]byte, error) {
 	c.Stderr = io.MultiWriter(&stderr, &combined)
 
 	err := c.Run()
-	exitCode := c.ProcessState.ExitCode()
-	logger = logger.With(
-		"exitCode", exitCode,
-		"stdout", stdout.String(),
-		"stderr", stderr.String(),
-	)
 	if err != nil {
+		logger = logger.With(
+			"exitCode", c.ProcessState.ExitCode(),
+			"stdout", stdout.String(),
+			"stderr", stderr.String(),
+		)
 		logger.Error("command failed", "err", err)
 	} else {
 		logger.Debug("command succeeded")

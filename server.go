@@ -4,6 +4,7 @@ import (
 	"brianmargolis/shades/client"
 	"brianmargolis/shades/protocol"
 	"bufio"
+	"io"
 	"net"
 	"os"
 	"os/signal"
@@ -69,8 +70,13 @@ func (s *server) talkToClient(
 	for {
 		msg, err := r.ReadString('\n')
 		if err != nil {
-			// cross me once, get the hell outta here forever
-			logger.With("error", err).Error("error reading from client - disconnecting")
+			if err == io.EOF {
+				// short-lived CLI clients (toggle, set) intentionally disconnect after
+				// proposing a theme — this is not an error
+				logger.Debug("client disconnected")
+			} else {
+				logger.With("error", err).Warn("error reading from client - disconnecting")
+			}
 			unsubscribe(mutex, clients, conn)
 			return
 		}

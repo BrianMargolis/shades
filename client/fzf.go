@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 type FZFClient struct{}
@@ -13,7 +14,7 @@ func NewFZFClient() Client {
 }
 
 func (b FZFClient) Start(socketName string) error {
-	return SubscribeToSocket(b.set)(socketName)
+	return SubscribeToSocket(SetterWithContext(b.set, "fzf"))(socketName)
 }
 
 func (b FZFClient) set(theme ThemeVariant) error {
@@ -21,6 +22,7 @@ func (b FZFClient) set(theme ThemeVariant) error {
 	if err != nil {
 		return err
 	}
+	zap.S().Debugw("applying theme", "client", "fzf", "theme", theme.ThemeName, "variant", theme.VariantName)
 	fzfTheme := DoTemplate(config.Client["fzf"]["theme"], theme)
 
 	cmd := fmt.Sprintf("set -Ux FZF_DEFAULT_OPTS '%s'", fzfTheme)

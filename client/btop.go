@@ -14,12 +14,10 @@ func NewBtopClient() Client {
 }
 
 func (b BtopClient) Start(socket string) error {
-	return SubscribeToSocket(b.set)(socket)
+	return SubscribeToSocket(SetterWithContext(b.set, "btop"))(socket)
 }
 
 func (b BtopClient) set(theme ThemeVariant) error {
-	logger := zap.S()
-
 	config, err := GetConfig()
 	if err != nil {
 		return err
@@ -27,20 +25,16 @@ func (b BtopClient) set(theme ThemeVariant) error {
 
 	btopConfigPath := ExpandTilde(config.Client["btop"]["btop-config-path"])
 	themePath := ExpandTilde(config.Client["btop"]["theme-path"])
-	logger = logger.With("btopConfigPath", btopConfigPath, "themePath", themePath)
+	configLine := fmt.Sprintf("color_theme = %s/%s-%s.theme", themePath, theme.ThemeName, theme.VariantName)
 
-	path := fmt.Sprintf("%s/%s-%s.theme", themePath, theme.ThemeName, theme.VariantName)
-	configLine := "color_theme = " + path
-	logger = logger.With("configLine", configLine)
+	zap.S().Debugw("applying theme", "client", "btop", "theme", theme.ThemeName, "variant", theme.VariantName, "btopConfigPath", btopConfigPath)
 
-	logger.Debug("setting btop theme...")
 	n, err := ReplaceAtTag(btopConfigPath, configLine, "color_theme = ")
 	if err != nil {
 		return errors.Wrap(err, "replacing theme in btop config")
 	}
-
 	if n == 0 {
-		logger.Warn("no replacements made in btop config")
+		zap.S().Warnw("no replacements made in btop config", "btopConfigPath", btopConfigPath)
 	}
 
 	return nil

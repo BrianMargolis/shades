@@ -14,7 +14,7 @@ func NewGhosttyClient() Client {
 }
 
 func (a GhosttyClient) Start(socket string) error {
-	return SubscribeToSocket(a.set)(socket)
+	return SubscribeToSocket(SetterWithContext(a.set, "ghostty"))(socket)
 }
 
 func (a GhosttyClient) set(theme ThemeVariant) error {
@@ -22,34 +22,22 @@ func (a GhosttyClient) set(theme ThemeVariant) error {
 	if err != nil {
 		return err
 	}
-	logger := zap.S()
-	logger = logger.With("theme", theme.ThemeName, "variant", theme.VariantName)
 
 	path := ExpandTilde(config.Client["ghostty"]["path"])
-	logger = logger.With(
-		"path", path,
-	)
+	zap.S().Debugw("applying theme", "client", "ghostty", "theme", theme.ThemeName, "variant", theme.VariantName, "path", path)
 
 	// clear out the file and replace it with `theme = <theme>`
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		logger.Error("failed to open ghostty config file", "error", err)
-		return err
+		return fmt.Errorf("failed to open ghostty config file: %w", err)
 	}
 	defer f.Close()
 
-	_, err = f.WriteString(fmt.Sprintf("theme = \"%s-%s\"\n", theme.ThemeName, theme.VariantName))
-	if err != nil {
-		logger.Error("failed to write to ghostty config file", "error", err)
-		return err
+	if _, err = f.WriteString(fmt.Sprintf("theme = \"%s-%s\"\n", theme.ThemeName, theme.VariantName)); err != nil {
+		return fmt.Errorf("failed to write to ghostty config file: %w", err)
 	}
 
 	// send USR2 signal to ghostty process to reload config
 	_, err = Run("pkill", "-USR2", "ghostty")
-	if err != nil {
-		return err
-	}
-
-	logger.Info("updated ghostty config file")
-	return nil
+	return err
 }
