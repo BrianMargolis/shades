@@ -2,16 +2,16 @@ package client
 
 import (
 	"os/exec"
+	"strconv"
+
+	"go.uber.org/zap"
 )
 
 type ClaudeClient struct {
-	sleepMultiplier int
 }
 
 func NewClaudeClient() Client {
-	return ClaudeClient{
-		sleepMultiplier: 3, // crank this up to debug
-	}
+	return ClaudeClient{}
 }
 
 func (b ClaudeClient) Start(socketName string) error {
@@ -19,10 +19,25 @@ func (b ClaudeClient) Start(socketName string) error {
 }
 
 func (b ClaudeClient) set(theme ThemeVariant) error {
-	// jq '.theme = "light"' ~/.claude.json > /tmp/.claude.tmp && mv /tmp/.claude.tmp ~/.claude.json
+	logger := zap.S()
+	config, err := GetConfig()
+	if err != nil {
+		return err
+	}
+
 	themeStr := "dark"
 	if theme.Light {
 		themeStr = "light"
+	}
+
+	useANSIStr := config.Client["claude"]["use-ansi"]
+	useANSI, err := strconv.ParseBool(useANSIStr)
+	if err != nil {
+		logger.With("useANSIStr", useANSIStr).Error(err)
+	}
+
+	if useANSI {
+		themeStr += "-ansi"
 	}
 
 	c := exec.Command(
