@@ -11,6 +11,8 @@ daemon:
     - "mac"
     - "tmux"
 client:
+  firefox:
+    theme-path: "~/dotfiles/firefox/theme.css"
   mac-wallpaper:
     dark: "/Users/brian/Pictures/loupe/loupe-mono-dark.heic"
     light: "/Users/brian/Pictures/loupe/loupe-mono-light.heic"

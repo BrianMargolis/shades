@@ -68,6 +68,7 @@ func main() {
 		"btop":          client.NewBtopClient(),
 		"claude":        client.NewClaudeClient(),
 		"debug":         client.NewDebugClient(),
+		"firefox":       client.NewFirefoxClient(),
 		"fzf":           client.NewFZFClient(),
 		"ghostty":       client.NewGhosttyClient(),
 		"mac":           client.NewMacClient(),
