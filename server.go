@@ -133,20 +133,26 @@ func unsubscribe(mutex *sync.Mutex, clients *[]net.Conn, conn net.Conn) {
 	}
 }
 
-// broadcast sends a message to all the clients
+// broadcast sends a message to all subscribed clients, pruning any whose
+// connections have gone dead since they last communicated.
 func broadcast(mutex *sync.Mutex, clients *[]net.Conn, msg []byte) {
 	logger := zap.S()
 
 	mutex.Lock()
 	defer mutex.Unlock()
-	logger.With("nClients", len(*clients), "message", string(msg)).Debug("broadcasting message to clients")
+	logger.Debugw("broadcasting message to clients", "nClients", len(*clients))
 
+	active := make([]net.Conn, 0, len(*clients))
 	for _, c := range *clients {
 		_, err := c.Write(msg)
 		if err != nil {
-			logger.With("error", err, "client", c.RemoteAddr()).Warn("error writing to client during broadcast")
+			logger.Warnw("client write failed during broadcast, removing", "error", err)
+			c.Close()
+		} else {
+			active = append(active, c)
 		}
 	}
+	*clients = active
 }
 
 // whisper sends a message to just one client
