@@ -11,6 +11,12 @@ daemon:
     - "mac"
     - "tmux"
 client:
+  ghostty:
+    path: "~/.config/ghostty/theme"
+    # Optional: comma-separated shaders to disable when a light theme is active
+    # (they are re-enabled when switching back to a dark theme).
+    # Requires ghostty-shader-manager to be on PATH.
+    # shader-manager-light-off: "bloom"
   firefox:
     theme-path: "~/dotfiles/firefox/theme.css"
   mac-wallpaper:

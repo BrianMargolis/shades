@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -35,6 +36,26 @@ func (a GhosttyClient) set(theme ThemeVariant) error {
 
 	if _, err = f.WriteString(fmt.Sprintf("theme = \"%s-%s\"\n", theme.ThemeName, theme.VariantName)); err != nil {
 		return fmt.Errorf("failed to write to ghostty config file: %w", err)
+	}
+
+	// Run ghostty-shader-manager integration if configured.
+	// shader-manager-light-off is a comma-separated list of shaders to disable
+	// when a light theme is active (and re-enable when a dark theme is active).
+	if shaderList := config.Client["ghostty"]["shader-manager-light-off"]; shaderList != "" {
+		action := "on"
+		if theme.Light {
+			action = "off"
+		}
+		for _, shader := range strings.Split(shaderList, ",") {
+			shader = strings.TrimSpace(shader)
+			if shader == "" {
+				continue
+			}
+			zap.S().Debugw("ghostty-shader-manager", "action", action, "shader", shader)
+			if _, runErr := Run("ghostty-shader-manager", action, shader); runErr != nil {
+				zap.S().Warnw("ghostty-shader-manager failed", "action", action, "shader", shader, "err", runErr)
+			}
+		}
 	}
 
 	// send USR2 signal to ghostty process to reload config
