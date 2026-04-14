@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -55,6 +56,27 @@ func (a GhosttyClient) set(theme ThemeVariant) error {
 			if _, runErr := Run("ghostty-shader-manager", action, shader); runErr != nil {
 				zap.S().Warnw("ghostty-shader-manager failed", "action", action, "shader", shader, "err", runErr)
 			}
+		}
+	}
+
+	blurKey := "shader-manager-blur-dark"
+	if theme.Light {
+		blurKey = "shader-manager-blur-light"
+	}
+
+	if shouldBlurStr := config.Client["ghostty"][blurKey]; shouldBlurStr != "" {
+		shouldBlur, err := strconv.ParseBool(shouldBlurStr)
+		if err != nil {
+			zap.S().Warnw("invalid value for "+blurKey, "value", shouldBlurStr, "err", err)
+		}
+		action := "on"
+		if !shouldBlur {
+			action = "off"
+		}
+
+		zap.S().Debugw("ghostty-shader-manager", "shouldBlur", shouldBlur, "action", action)
+		if _, runErr := Run("ghostty-shader-manager", "blur", action); runErr != nil {
+			zap.S().Warnw("ghostty-shader-manager failed", "action", "blur", "shouldBlur", shouldBlur, "err", runErr)
 		}
 	}
 
