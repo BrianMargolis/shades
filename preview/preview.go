@@ -1,10 +1,10 @@
 package preview
 
 import (
-	"brianmargolis/shades/client"
 	"fmt"
 	"strings"
 
+	"github.com/brianmargolis/shades/client"
 	"go.uber.org/zap"
 )
 

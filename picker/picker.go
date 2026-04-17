@@ -1,7 +1,6 @@
 package picker
 
 import (
-	"brianmargolis/shades/client"
 	"context"
 	"fmt"
 	"io"
@@ -9,6 +8,8 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+
+	"github.com/brianmargolis/shades/client"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"

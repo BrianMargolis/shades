@@ -1,11 +1,12 @@
 package client
 
 import (
-	"brianmargolis/shades/protocol"
 	"bufio"
 	"context"
 	"net"
 	"strings"
+
+	"github.com/brianmargolis/shades/protocol"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"

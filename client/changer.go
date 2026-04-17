@@ -1,9 +1,10 @@
 package client
 
 import (
-	"brianmargolis/shades/protocol"
 	"context"
 	"strings"
+
+	"github.com/brianmargolis/shades/protocol"
 
 	"github.com/pkg/errors"
 )

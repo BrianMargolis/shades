@@ -1,9 +1,6 @@
 package main
 
 import (
-	"brianmargolis/shades/client"
-	"brianmargolis/shades/picker"
-	"brianmargolis/shades/preview"
 	"bytes"
 	"context"
 	"fmt"
@@ -12,6 +9,10 @@ import (
 	"path/filepath"
 	"sync"
 	"text/template"
+
+	"github.com/brianmargolis/shades/client"
+	"github.com/brianmargolis/shades/picker"
+	"github.com/brianmargolis/shades/preview"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

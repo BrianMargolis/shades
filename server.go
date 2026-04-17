@@ -1,8 +1,6 @@
 package main
 
 import (
-	"brianmargolis/shades/client"
-	"brianmargolis/shades/protocol"
 	"bufio"
 	"fmt"
 	"io"
@@ -14,6 +12,10 @@ import (
 	"sync"
 	"sync/atomic"
 	"syscall"
+
+	"github.com/brianmargolis/shades/client"
+
+	"github.com/brianmargolis/shades/protocol"
 
 	"go.uber.org/zap"
 )

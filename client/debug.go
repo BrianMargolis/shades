@@ -1,7 +1,7 @@
 package client
 
 import (
-	"brianmargolis/shades/protocol"
+	"github.com/brianmargolis/shades/protocol"
 
 	"go.uber.org/zap"
 )
