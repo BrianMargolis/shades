@@ -4,10 +4,12 @@ import (
 	"brianmargolis/shades/client"
 	"brianmargolis/shades/protocol"
 	"bufio"
+	"fmt"
 	"io"
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -32,11 +34,21 @@ func NewServer() Server {
 
 func (s *server) Start(socketPath string) error {
 	logger := zap.S()
+
+	// Remove any stale socket left by a crashed daemon; net.Listen("unix", ...)
+	// fails if the path already exists even when nothing is listening.
+	os.Remove(socketPath)
+
+	if err := os.MkdirAll(filepath.Dir(socketPath), 0o700); err != nil {
+		return fmt.Errorf("create socket dir: %w", err)
+	}
+
 	socket, err := net.Listen("unix", socketPath)
 	if err != nil {
 		logger.With("error", err).Error("Error listening on socket")
 		panic(err)
 	}
+	defer os.Remove(socketPath)
 	planForDeath(socket)
 
 	clients := []net.Conn{}
