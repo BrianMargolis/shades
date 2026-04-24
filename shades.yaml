@@ -1,80 +1,70 @@
 socket-path: "/tmp/theme-change.sock"
-defaultLightTheme: "catppuccin;latte"
-defaultDarkTheme: "catppuccin;mocha"
+defaultLightTheme: "flexoki;light"
+defaultDarkTheme: "fluoromachine;fluoromachine"
 daemon:
   enabled-components:
-    - "alacritty"
     - "bat"
     - "btop"
     - "claude"
+    - "firefox"
     - "fzf"
+    - "ghostty"
     - "mac"
     - "tmux"
 client:
-  ghostty:
-    path: "~/.config/ghostty/theme"
-    # Optional: comma-separated shaders to disable when a light theme is active
-    # (they are re-enabled when switching back to a dark theme).
-    # Requires ghostty-shader-manager to be on PATH.
-    # shader-manager-light-off: "bloom"
-  firefox:
-    theme-path: "~/dotfiles/firefox/theme.css"
+  claude:
+    use-ansi: true
   mac-wallpaper:
     dark: "/Users/brian/Pictures/loupe/loupe-mono-dark.heic"
     light: "/Users/brian/Pictures/loupe/loupe-mono-light.heic"
-  alacritty:
-    alacritty-config-path: "/Users/brian/.config/alacritty/alacritty.toml"
-    theme-path: "/Users/brian/.config/alacritty/themes/themes"
+  ghostty:
+    path: "~/.config/ghostty/ghostty-theme"
+    shader-manager-light-off: "bloom"
+    shader-manager-blur-light: false
+    shader-manager-blur-dark: false
   fzf:
     # https://vitormv.github.io/fzf-themes/
     theme: >
-      --color=fg:{BLUE},fg+:{AQUA},bg:{BG0},bg+:{BG0} 
-      --color=hl:#5f87af,hl+:#5fd7ff,info:{GREEN},marker:{FG} 
-      --color=prompt:{PURPLE},spinner:{BLUE},pointer:{GREEN},header:{YELLOW},label:#aeaeae,query:{GREEN}
-      --border="rounded" 
-      --border-label="" 
-      --preview-window="border-rounded" 
-      --prompt="> " --marker=">" --pointer="◆" --separator="─" --scrollbar="│"
+      --color=fg:{FG},fg+:{YELLOW},bg:-1,bg+:{BG0}
+      --color=hl:{YELLOW},hl+:{RED},info:{YELLOW},marker:{FG}
+      --color=prompt:{GREEN},spinner:{YELLOW},pointer:{YELLOW},header:{YELLOW},label:{FG},query:{PURPLE}
+      --border="none"
+      --border-label=""
+      --height="30%"
+      --layout="reverse"
+      --input-border="rounded"
+      --info="hidden"
+      --cycle
+      --preview-window="border-rounded"
+      --prompt="" --marker=" " --pointer=" " --separator="" --scrollbar=""
+  firefox:
+    theme-path: "~/dotfiles/browser/theme.css"
   tmux:
     status-bg: "{BG0}"
-    status-fg: "{RED}"
-    window-status-format: "#{?#{==:#{session_windows},1},,#[fg={BG0},bg={PURPLE}] #I. #W #[bg=#fdf6e3]}"
-    window-status-current-format: "#{?#{==:#{session_windows},1},,#[fg={BG0},bg={GREEN}] #I. *#W* #[bg=#fdf6e3]}"
-    status-left: "#[fg={BG0},bg={BLUE}] #S #[bg=#fdf6e3]"
-    status-right: >
-      #[fg={BG0},bg={RED}] #(date +"%I:%M%p" | tr '[:upper:]' '[:lower:]' | sed 's/^0//')
-      #[bg=#fdf6e3]#[fg={BG0},bg={PURPLE})
-      #[bg=#fdf6e3]#[fg={BG0},bg={ORANGE}] #(cd #{pane_current_path}; dirs)
+    status-fg: "{BG0}"
+    window-status-format: "#[fg={BG0},bg={BG0}]#{?#{==:#{session_windows},1},,#[fg={FG},bg={BG0}]#W#{?#{>:#{window_panes},1},+,} [#I]}#[fg={BG0},bg={BG0}]"
+    window-status-current-format: "#{?#{==:#{session_windows},1},,#[fg={ORANGE},bg={BG0}]#[fg={BG0},bg={ORANGE}]#W#{?#{>:#{window_panes},1},+,} [#I]#[fg={ORANGE},bg={BG0}]}"
+    status-left: "#[fg={FG},bg={BG0}]\
+      #[fg={BG0},bg={FG}]#S\
+      #[fg={FG},bg={BG0}] "
+    status-right: "#[fg={ORANGE},bg={BG0}]\
+      #[fg={BG0},bg={ORANGE}]#(cd #{pane_current_path}; tmux-git-branch)\
+      #[fg={PURPLE},bg={ORANGE}]\
+      #[fg={BG0},bg={PURPLE}]#(cd #{pane_current_path}; pwd | sed -e \"s|^$HOME|~|\" | sed 's:\\([^/]\\)[^/]*/:\\1/:g') \
+      #[fg={RED},bg={PURPLE}]\
+      #[FG={BG0},bg={RED}]#(tmux-claude-usage five_hour --mtd) \
+      #[fg={GREEN},bg={RED}]\
+      #[FG={BG0},bg={GREEN}]#(spotify-now-playing) \
+      #[fg={FG},bg={GREEN}]\
+      #[fg={BG0},bg={FG}]#(date +\"%I:%M%p\" | tr '[:upper:]' '[:lower:]' | sed 's/^0//')#[fg={FG},bg={BG0}]"
+    clock-mode-colour: "{ORANGE}"
   btop:
-    light-theme-path: "/Users/brian/.config/btop/themes/everforest-light-medium.theme"
-    theme-path: "/Users/brian/.config/btop/themes"
-    dark-theme-path: "/Users/brian/.config/btop/themes/everforest-dark-medium.theme"
-    btop-config-path: "/Users/brian/.config/btop/btop.conf"
+    theme-path: "~/.config/btop/themes"
+    btop-config-path: "~/dotfiles/btop/btop.conf"
 themes:
   everforest:
     name: "everforest"
     variants:
-      dark-hard:
-        light: false
-        colors:
-          BGDIM: "#1E2326"
-          BG0: "#272E33"
-          BG1: "#2E383C"
-          BG2: "#374145"
-          BG3: "#414B50"
-          BG4: "#495156"
-          BG5: "#4F5B58"
-          RED: "#D3C6AA"
-          ORANGE: "#E67E80"
-          YELLOW: "#E69875"
-          GREEN: "#DBBC7F"
-          BLUE: "#A7C080"
-          AQUA: "#83C092"
-          PURPLE: "#7FBBB3"
-          FG: "#D699B6"
-          GRAY1: "#A7C080"
-          GRAY2: "#D3C6AA"
-          GRAY3: "#E67E80"
       dark-medium:
         light: false
         colors:
@@ -85,59 +75,17 @@ themes:
           BG3: "#475258"
           BG4: "#4F585E"
           BG5: "#56635f"
-          RED: "#D3C6AA"
-          ORANGE: "#E67E80"
-          YELLOW: "#E69875"
-          GREEN: "#DBBC7F"
-          BLUE: "#A7C080"
+          RED: "#E67E80"
+          ORANGE: "#E69875"
+          YELLOW: "#DBBC7F"
+          GREEN: "#A7C080"
+          BLUE: "#7FBBB3"
           AQUA: "#83C092"
-          PURPLE: "#7FBBB3"
-          FG: "#D699B6"
-          GRAY1: "#A7C080"
-          GRAY2: "#D3C6AA"
-          GRAY3: "#E67E80"
-      dark-low:
-        light: false
-        colors:
-          BGDIM: "#293136"
-          BG0: "#333C43"
-          BG1: "#3A464C"
-          BG2: "#434F55"
-          BG3: "#4D5960"
-          BG4: "#555F66"
-          BG5: "#5D6B66"
-          RED: "#D3C6AA"
-          ORANGE: "#E67E80"
-          YELLOW: "#E69875"
-          GREEN: "#DBBC7F"
-          BLUE: "#A7C080"
-          AQUA: "#83C092"
-          PURPLE: "#7FBBB3"
-          FG: "#D699B6"
-          GRAY1: "#A7C080"
-          GRAY2: "#D3C6AA"
-          GRAY3: "#E67E80"
-      light-hard:
-        light: true
-        colors:
-          BGDIM: "#F2EFDF"
-          BG0: "#FFFBEF"
-          BG1: "#F8F5E4"
-          BG2: "#F2EFDF"
-          BG3: "#EDEADA"
-          BG4: "#E8E5D5"
-          BG5: "#BEC5B2"
-          RED: "#5C6A72"
-          ORANGE: "#F85552"
-          YELLOW: "#F57D26"
-          GREEN: "#DFA000"
-          BLUE: "#8DA101"
-          AQUA: "#35A77C"
-          PURPLE: "#3A94C5"
-          FG: "#DF69BA"
-          GRAY1: "#93B259"
-          GRAY2: "#708089"
-          GRAY3: "#E66868"
+          PURPLE: "#D699B6"
+          FG: "#D3C6AA"
+          GRAY1: "#7A8478"
+          GRAY2: "#859289"
+          GRAY3: "#9DA9A0"
       light-medium:
         light: true
         colors:
@@ -148,38 +96,17 @@ themes:
           BG3: "#E6E2CC"
           BG4: "#E0DCC7"
           BG5: "#BDC3AF"
-          RED: "#5C6A72"
-          ORANGE: "#F85552"
-          YELLOW: "#F57D26"
-          GREEN: "#DFA000"
-          BLUE: "#8DA101"
+          RED: "#F85552"
+          ORANGE: "#F57D26"
+          YELLOW: "#DFA000"
+          GREEN: "#8DA101"
+          BLUE: "#3A94C5"
           AQUA: "#35A77C"
-          PURPLE: "#3A94C5"
-          FG: "#DF69BA"
-          GRAY1: "#93B259"
-          GRAY2: "#708089"
-          GRAY3: "#E66868"
-      light-low:
-        light: true
-        colors:
-          BGDIM: "#E5DFC5"
-          BG0: "#F3EAD3"
-          BG1: "#EAE4CA"
-          BG2: "#E5DFC5"
-          BG3: "#DDD8BE"
-          BG4: "#D8D3BA"
-          BG5: "#B9C0AB"
-          RED: "#5C6A72"
-          ORANGE: "#F85552"
-          YELLOW: "#F57D26"
-          GREEN: "#DFA000"
-          BLUE: "#8DA101"
-          AQUA: "#35A77C"
-          PURPLE: "#3A94C5"
-          FG: "#DF69BA"
-          GRAY1: "#93B259"
-          GRAY2: "#708089"
-          GRAY3: "#E66868"
+          PURPLE: "#DF69BA"
+          FG: "#5C6A72"
+          GRAY1: "#A6B0A0"
+          GRAY2: "#939F91"
+          GRAY3: "#829181"
   catppuccin:
     name: "catppuccin"
     variants:
@@ -225,3 +152,405 @@ themes:
           GRAY1: "#313244" # surface 0
           GRAY2: "#45475a" # surface 1
           GRAY3: "#585b70" # surface 2
+  gruvbox:
+    name: "gruvbox"
+    variants:
+      light:
+        light: true
+        colors:
+          BGDIM: "#f9f5d7"
+          BG0: "#fbf1c7"
+          BG1: "#ebdbb2"
+          BG2: "#d5c4a1"
+          BG3: "#bdae93"
+          BG4: "#a89984"
+          BG5: "#928374"
+          RED: "#cc241d"
+          ORANGE: "#d65d0e"
+          YELLOW: "#d79921"
+          GREEN: "#98971a"
+          BLUE: "#458588"
+          AQUA: "#689d6a"
+          PURPLE: "#b16286"
+          FG: "#3c3836"
+          GRAY1: "#928374"
+          GRAY2: "#928374"
+          GRAY3: "#7c6f64"
+      dark:
+        light: false
+        colors:
+          BGDIM: "#1d2021"
+          BG0: "#282828"
+          BG1: "#3c3836"
+          BG2: "#504945"
+          BG3: "#665c54"
+          BG4: "#7c6f64"
+          BG5: "#928374"
+          RED: "#cc241d"
+          ORANGE: "#d65d0e"
+          YELLOW: "#d79921"
+          GREEN: "#98971a"
+          BLUE: "#458588"
+          AQUA: "#689d6a"
+          PURPLE: "#b16286"
+          FG: "#ebdbb2"
+          GRAY1: "#928374"
+          GRAY2: "#928374"
+          GRAY3: "#7c6f64"
+  rose-pine:
+    name: "rose-pine"
+    variants:
+      dawn:
+        light: true
+        colors:
+          BGDIM: "#faf4ed" # base
+          BG0: "#faf4ed" # base
+          BG1: "#fffaf3" # surface
+          BG2: "#f2e9e1" # overlay
+          BG3: "#9893a5" # muted
+          BG4: "#797593" # subtle
+          BG5: "#797593" # subtle
+          RED: "#b4637a" # love
+          ORANGE: "#d7827e" # rose (it's a stretch)
+          YELLOW: "#ea9d34" # gold
+          GREEN: "#286983" # pine
+          BLUE: "#9ccfd8" # foam
+          AQUA: "#9ccfd8" # foam
+          PURPLE: "#907aa9" # iris
+          FG: "#575279" # text
+          GRAY1: "#f4ede8" # highlight low
+          GRAY2: "#dfdad9" # highlight med
+          GRAY3: "#cecacd" # highlight high
+      moon:
+        light: false
+        colors:
+          BGDIM: "#232136" # base
+          BG0: "#232136" # base
+          BG1: "#2a273f" # surface
+          BG2: "#393552" # overlay
+          BG3: "#6e6a86" # muted
+          BG4: "#908caa" # subtle
+          BG5: "#908caa" # subtle
+          RED: "#eb6f92" # love
+          ORANGE: "#ea9a97" # rose
+          YELLOW: "#f6c177" # gold
+          GREEN: "#3e8fb0" # pine
+          BLUE: "#9ccfd8" # foam
+          AQUA: "#9ccfd8" # foam
+          PURPLE: "#907aa9" # iris
+          FG: "#e0def4" # text
+          GRAY1: "#2a283e" # highlight low
+          GRAY2: "#44415a" # highlight med
+          GRAY3: "#56526e" # highlight high
+  tokyo-night:
+    name: "tokyo-night"
+    variants:
+      night:
+        light: false
+        colors:
+          BGDIM: "#16161e"
+          BG0: "#1a1b26"
+          BG1: "#24283b"
+          BG2: "#32344a"
+          BG3: "#414868"
+          BG4: "#565f89"
+          BG5: "#6f7bb6"
+          RED: "#f7768e"
+          ORANGE: "#ff9e64"
+          YELLOW: "#e0af68"
+          GREEN: "#9ece6a"
+          BLUE: "#7aa2f7"
+          AQUA: "#2ac3de"
+          PURPLE: "#bb9af7"
+          FG: "#c0caf5"
+          GRAY1: "#787c99"
+          GRAY2: "#a9b1d6"
+          GRAY3: "#cfc9c2"
+      storm:
+        light: false
+        colors:
+          BGDIM: "#1b1e2d"
+          BG0: "#24283b"
+          BG1: "#1f2335"
+          BG2: "#32344a"
+          BG3: "#414868"
+          BG4: "#565f89"
+          BG5: "#6f7bb6"
+          RED: "#f7768e"
+          ORANGE: "#ff9e64"
+          YELLOW: "#e0af68"
+          GREEN: "#9ece6a"
+          BLUE: "#7aa2f7"
+          AQUA: "#2ac3de"
+          PURPLE: "#bb9af7"
+          FG: "#c0caf5"
+          GRAY1: "#787c99"
+          GRAY2: "#a9b1d6"
+          GRAY3: "#cfc9c2"
+      day:
+        light: true
+        colors:
+          BGDIM: "#d0d5e3"
+          BG0: "#e1e2e7"
+          BG1: "#c1c9df"
+          BG2: "#c4c8da"
+          BG3: "#d9dce5"
+          BG4: "#a8aecb"
+          BG5: "#848cb5"
+          RED: "#f52a65"
+          ORANGE: "#b15c00"
+          YELLOW: "#8c6c3e"
+          GREEN: "#587539"
+          BLUE: "#2e7de9"
+          AQUA: "#007197"
+          PURPLE: "#9854f1"
+          FG: "#3760bf"
+          GRAY1: "#6172b0"
+          GRAY2: "#848cb5"
+          GRAY3: "#a8aecb"
+  kanagawa:
+    name: "kanagawa"
+    variants:
+      wave:
+        light: false
+        colors:
+          BGDIM: "#16161D"
+          BG0: "#1F1F28"
+          BG1: "#223249"
+          BG2: "#2A2A37"
+          BG3: "#363646"
+          BG4: "#54546D"
+          BG5: "#727169"
+          RED: "#C34043"
+          ORANGE: "#FFA066"
+          YELLOW: "#DCA561"
+          GREEN: "#76946A"
+          BLUE: "#7E9CD8"
+          AQUA: "#6A9589"
+          PURPLE: "#957FB8"
+          FG: "#DCD7BA"
+          GRAY1: "#C8C093"
+          GRAY2: "#938AA9"
+          GRAY3: "#54546D"
+      dragon:
+        light: false
+        colors:
+          BGDIM: "#0d0c0c"
+          BG0: "#181616"
+          BG1: "#1D1C19"
+          BG2: "#282727"
+          BG3: "#393836"
+          BG4: "#625e5a"
+          BG5: "#7a8382"
+          RED: "#c4746e"
+          ORANGE: "#b6927b"
+          YELLOW: "#c4b28a"
+          GREEN: "#87a987"
+          BLUE: "#8ba4b0"
+          AQUA: "#8ea4a2"
+          PURPLE: "#8992a7"
+          FG: "#c5c9c5"
+          GRAY1: "#a6a69c"
+          GRAY2: "#9e9b93"
+          GRAY3: "#737c73"
+      lotus:
+        light: true
+        colors:
+          BGDIM: "#d5cea3"
+          BG0: "#f2ecbc"
+          BG1: "#e7dba0"
+          BG2: "#e5ddb0"
+          BG3: "#e4d794"
+          BG4: "#dcd7ba"
+          BG5: "#8a8980"
+          RED: "#c84053"
+          ORANGE: "#cc6d00"
+          YELLOW: "#836f4a"
+          GREEN: "#6f894e"
+          BLUE: "#4d699b"
+          AQUA: "#597b75"
+          PURPLE: "#b35b79"
+          FG: "#545464"
+          GRAY1: "#716e61"
+          GRAY2: "#8a8980"
+          GRAY3: "#a09cac"
+  cyberdream:
+    name: "cyberdream"
+    variants:
+      default:
+        light: false
+        colors:
+          BGDIM: "#111316"
+          BG0: "#16181a"
+          BG1: "#1e2124"
+          BG2: "#242729"
+          BG3: "#2e3135"
+          BG4: "#3e4145"
+          BG5: "#60666d"
+          RED: "#ff6e5e"
+          ORANGE: "#f1a261"
+          YELLOW: "#f5d96b"
+          GREEN: "#5eff6c"
+          BLUE: "#5ea1ff"
+          AQUA: "#04d1f9"
+          PURPLE: "#bd79f7"
+          FG: "#ffffff"
+          GRAY1: "#3d4144"
+          GRAY2: "#60666d"
+          GRAY3: "#9ba7b4"
+  flexoki:
+    name: "flexoki"
+    variants:
+      light:
+        light: true
+        colors:
+          BGDIM: "#f2f0e5"
+          BG0: "#fffcf0"
+          BG1: "#f2f0e5"
+          BG2: "#e6e4d9"
+          BG3: "#dad8ce"
+          BG4: "#cecdc3"
+          BG5: "#b7b5ac"
+          RED: "#af3029"
+          ORANGE: "#bc5215"
+          YELLOW: "#ad8301"
+          GREEN: "#66800b"
+          BLUE: "#205ea6"
+          AQUA: "#24837b"
+          PURPLE: "#5e409d"
+          FG: "#100f0f"
+          GRAY1: "#cecdc3"
+          GRAY2: "#b7b5ac"
+          GRAY3: "#878580"
+      dark:
+        light: false
+        colors:
+          BGDIM: "#0a0908"
+          BG0: "#100f0f"
+          BG1: "#1c1b1a"
+          BG2: "#282726"
+          BG3: "#343331"
+          BG4: "#403e3c"
+          BG5: "#575653"
+          RED: "#d14d41"
+          ORANGE: "#da702c"
+          YELLOW: "#d0a215"
+          GREEN: "#879a39"
+          BLUE: "#4385be"
+          AQUA: "#3aa99f"
+          PURPLE: "#8b7ec8"
+          FG: "#cecdc3"
+          GRAY1: "#403e3c"
+          GRAY2: "#575653"
+          GRAY3: "#878580"
+  fluoromachine:
+    name: "fluoromachine"
+    variants:
+      fluoromachine:
+        light: false
+        colors:
+          BGDIM: "#241B2F"
+          BG0: "#262335"
+          BG1: "#302845"
+          BG2: "#3B2E55"
+          BG3: "#463465"
+          BG4: "#495495"
+          BG5: "#6A55AE"
+          RED: "#FE4450"
+          ORANGE: "#FF8B39"
+          YELLOW: "#FFCC00"
+          GREEN: "#72F1B8"
+          BLUE: "#AF6DF9"
+          AQUA: "#61E2FF"
+          PURPLE: "#FC199A"
+          FG: "#8BA7A7"
+          GRAY1: "#7A9090"
+          GRAY2: "#5E7A7A"
+          GRAY3: "#425757"
+      retrowave:
+        light: false
+        colors:
+          BGDIM: "#241B2F"
+          BG0: "#262335"
+          BG1: "#302845"
+          BG2: "#3B2E55"
+          BG3: "#463465"
+          BG4: "#495495"
+          BG5: "#6056A8"
+          RED: "#FE4450"
+          ORANGE: "#FF8B39"
+          YELLOW: "#FFCC00"
+          GREEN: "#72F1B8"
+          BLUE: "#AF6DF9"
+          AQUA: "#61E2FF"
+          PURPLE: "#FF7EDB"
+          FG: "#F8F8F8"
+          GRAY1: "#CCCCCC"
+          GRAY2: "#888888"
+          GRAY3: "#555555"
+      delta:
+        light: false
+        colors:
+          BGDIM: "#251D2B"
+          BG0: "#2B2233"
+          BG1: "#35243A"
+          BG2: "#3F2742"
+          BG3: "#492949"
+          BG4: "#925393"
+          BG5: "#A660A7"
+          RED: "#FF98B3"
+          ORANGE: "#FFD298"
+          YELLOW: "#EDFF98"
+          GREEN: "#C0FF98"
+          BLUE: "#D598FF"
+          AQUA: "#98FFFB"
+          PURPLE: "#FF67D4"
+          FG: "#EFEFFD"
+          GRAY1: "#C0C0D8"
+          GRAY2: "#8080A0"
+          GRAY3: "#505068"
+  onenord:
+    name: "onenord"
+    variants:
+      default:
+        light: false
+        colors:
+          BGDIM: "#1F232C"
+          BG0: "#2E3440"
+          BG1: "#3B4252"
+          BG2: "#434C5E"
+          BG3: "#4C566A"
+          BG4: "#646A76"
+          BG5: "#838FA6"
+          RED: "#BF616A"
+          ORANGE: "#D08F70"
+          YELLOW: "#EBCB8B"
+          GREEN: "#A3BE8C"
+          BLUE: "#81A1C1"
+          AQUA: "#88C0D0"
+          PURPLE: "#B988B0"
+          FG: "#C8D0E0"
+          GRAY1: "#D8DEE9"
+          GRAY2: "#838FA6"
+          GRAY3: "#646A76"
+      light:
+        light: true
+        colors:
+          BGDIM: "#FFFFFF"
+          BG0: "#F7F8FA"
+          BG1: "#ECEFF4"
+          BG2: "#E5E9F0"
+          BG3: "#D8DEE9"
+          BG4: "#C1C9D6"
+          BG5: "#838FA6"
+          RED: "#CB4F53"
+          ORANGE: "#EE5E25"
+          YELLOW: "#BA793E"
+          GREEN: "#48A53D"
+          BLUE: "#3879C5"
+          AQUA: "#3EA1AD"
+          PURPLE: "#9F4ACA"
+          FG: "#2E3440"
+          GRAY1: "#4C566A"
+          GRAY2: "#838FA6"
+          GRAY3: "#C1C9D6"
