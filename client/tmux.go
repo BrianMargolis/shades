@@ -27,6 +27,7 @@ func (t TMUXClient) set(theme ThemeVariant) error {
 		"window-status-current-format",
 		"status-left",
 		"status-right",
+		"status-format[1]",
 		"clock-mode-colour",
 	} {
 		template, ok := config.Client["tmux"][optionName]
