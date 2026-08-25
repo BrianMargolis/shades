@@ -14,6 +14,8 @@ daemon:
 client:
   claude:
     use-ansi: true
+    dark-ansi-theme: "custom:dark-ansi-custom"
+    light-ansi-theme: "custom:light-ansi-custom"
   mac-wallpaper:
     dark: "/Users/brian/Pictures/loupe/loupe-mono-dark.heic"
     light: "/Users/brian/Pictures/loupe/loupe-mono-light.heic"

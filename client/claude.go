@@ -24,23 +24,47 @@ func (b ClaudeClient) set(theme ThemeVariant) error {
 		return err
 	}
 
-	themeStr := "dark"
-	if theme.Light {
-		themeStr = "light"
-	}
+	claudeConfig := config.Client["claude"]
 
-	useANSIStr := config.Client["claude"]["use-ansi"]
+	useANSIStr := claudeConfig["use-ansi"]
 	useANSI, err := strconv.ParseBool(useANSIStr)
 	if err != nil {
 		zap.S().Warnw("could not parse use-ansi config, defaulting to false", "value", useANSIStr, "error", err)
 	}
-	if useANSI {
-		themeStr += "-ansi"
-	}
+
+	themeStr := claudeThemeName(claudeConfig, theme.Light, useANSI)
 
 	zap.S().Debugw("applying theme", "client", "claude", "theme", theme.ThemeName, "variant", theme.VariantName, "claudeTheme", themeStr)
 
 	return setClaudeTheme(themeStr)
+}
+
+// claudeThemeName resolves the configured Claude Code theme name for the
+// active variant. The plain dark/light names fall back to Claude Code's
+// built-in "dark"/"light" themes when unset, since those always exist; the
+// ANSI names have no sensible default because they're the user's own custom
+// theme entries in settings.json.
+func claudeThemeName(claudeConfig map[string]string, light bool, useANSI bool) string {
+	if useANSI {
+		key := "dark-ansi-theme"
+		if light {
+			key = "light-ansi-theme"
+		}
+		themeStr := claudeConfig[key]
+		if themeStr == "" {
+			zap.S().Warnw("use-ansi is set but no ansi theme name is configured", "key", key)
+		}
+		return themeStr
+	}
+
+	key, fallback := "dark-theme", "dark"
+	if light {
+		key, fallback = "light-theme", "light"
+	}
+	if themeStr := claudeConfig[key]; themeStr != "" {
+		return themeStr
+	}
+	return fallback
 }
 
 // setClaudeTheme writes the theme name into Claude Code's settings.json. The
