@@ -9,10 +9,21 @@ import (
 type ConfigModel struct {
 	SocketPath        string                       `yaml:"socket-path"`
 	Client            map[string]map[string]string `yaml:"client"`
+	Templates         []TemplateConfig             `yaml:"templates"`
 	Themes            Themes                       `yaml:"themes"`
 	DefaultDarkTheme  string                       `yaml:"defaultDarkTheme"`
 	DefaultLightTheme string                       `yaml:"defaultLightTheme"`
 	Daemon            DaemonConfig                 `yaml:"daemon"`
+}
+
+// TemplateConfig describes one arbitrary file to render for the "template"
+// client: a template file, an output path, and the character that wraps color
+// placeholders in the template (e.g. escape-char "%" turns "%RED%" into the
+// red hex value).
+type TemplateConfig struct {
+	TemplatePath string `yaml:"template-path"`
+	OutputPath   string `yaml:"output-path"`
+	EscapeChar   string `yaml:"escape-char"`
 }
 
 type DaemonConfig struct {

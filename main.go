@@ -153,6 +153,7 @@ func main() {
 		"ghostty":       client.NewGhosttyClient(),
 		"mac":           client.NewMacClient(),
 		"mac-wallpaper": client.NewMacWallpaperClient(),
+		"template":      client.NewTemplateClient(),
 		"tmux":          client.NewTMUXClient(),
 	}
 

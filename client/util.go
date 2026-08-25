@@ -121,8 +121,22 @@ func DoTemplate(
 	template string,
 	variant ThemeVariant,
 ) string {
+	return renderPlaceholders(template, "{", "}", variant)
+}
+
+// RenderTemplate replaces color placeholders wrapped in escapeChar on both
+// sides (e.g. escapeChar "%" matches "%RED%") with their hex values.
+func RenderTemplate(
+	template string,
+	escapeChar string,
+	variant ThemeVariant,
+) string {
+	return renderPlaceholders(template, escapeChar, escapeChar, variant)
+}
+
+func renderPlaceholders(template string, open string, close string, variant ThemeVariant) string {
 	for color, value := range variant.Colors {
-		template = strings.ReplaceAll(template, fmt.Sprintf("{%s}", color), value)
+		template = strings.ReplaceAll(template, fmt.Sprintf("%s%s%s", open, color, close), value)
 	}
 	return template
 }

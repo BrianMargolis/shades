@@ -61,6 +61,14 @@ client:
   btop:
     theme-path: "~/.config/btop/themes"
     btop-config-path: "~/dotfiles/btop/btop.conf"
+# Arbitrary file templating for apps without a dedicated client: each entry
+# renders template-path to output-path, replacing placeholders wrapped in
+# escape-char on both sides (e.g. escape-char "%" turns "%RED%" into the red
+# hex value).
+templates:
+  - template-path: "~/dotfiles/kitty/kitty.conf.template"
+    output-path: "~/.config/kitty/kitty.conf"
+    escape-char: "%"
 themes:
   everforest:
     name: "everforest"
