@@ -137,6 +137,9 @@ func RenderTemplate(
 func renderPlaceholders(template string, open string, close string, variant ThemeVariant) string {
 	for color, value := range variant.Colors {
 		template = strings.ReplaceAll(template, fmt.Sprintf("%s%s%s", open, color, close), value)
+		// "_HEX" gives consumers that can't use a literal "#" (e.g. GLSL
+		// integer/hex literals) the bare digits instead.
+		template = strings.ReplaceAll(template, fmt.Sprintf("%s%s_HEX%s", open, color, close), strings.TrimPrefix(value, "#"))
 	}
 	return template
 }
