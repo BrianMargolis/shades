@@ -110,21 +110,32 @@ with code that themes the thing you want themed, then you should do that.
 
 ### Protocol
 
-`shades` uses a simple plain text protocol with 5 `verb:noun` messages:
+`shades` uses a simple plain text protocol with 6 `verb:noun` messages:
 
 1. `subscribe:name` - begin receiving `set` messages
 2. `unsubscribe:` - stop receiving `set` messages
 3. `set:{theme}` - can only be sent by the daemon, a client should re-theme
    based on the value of `theme`
-4. `propose:{theme}` - this is a request from a client to change the theme,
+4. `palette:{json}` - can only be sent by the daemon, carries the colors of the
+   theme the following `set` names, as a JSON object of color name to hex
+   string (`{"BG0":"#2D353B","FG":"#D3C6AA",...}`)
+5. `propose:{theme}` - this is a request from a client to change the theme,
    which is useful for giving things like neovim interactive control over the
    theme
-5. `get:{theme}` - firing this will result in the server firing a `set` back,
-   useful in the startup context
+6. `get:{theme}` - firing this will result in the server firing a `palette` and
+   then a `set` back, useful in the startup context
 
-Each message is delimited by a `\n` character.
+Each message is delimited by a `\n` character. Only the first `:` delimits the
+verb, so a noun is free to contain colons (the `palette` payload does).
 
-`propose` and `get` are optional; the simplest client just
+The daemon always sends `palette` before the `set` it belongs to, so a client
+that wants the colors has them in hand by the time it is told to re-theme.
+Clients written against the Go helpers in this repo resolve the palette from
+`shades.yaml` themselves and ignore `palette` entirely; it exists for clients
+that cannot read the config, which would otherwise have to keep a duplicate
+copy of every palette.
+
+`palette`, `propose` and `get` are optional; the simplest client just
 `subscribe`s, waits for and acts open any `set`, and fires an `unsubscribe` on
 shutdown.
 

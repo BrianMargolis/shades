@@ -10,9 +10,11 @@ Where the valid verbs are:
   - unsubscribe:
 	- propose:[light|dark]
 	- set:[light|dark]
+	- palette:[json object of color name to hex string]
   - get
 
-An empty noun is valid (e.g. 'subscribe:').
+An empty noun is valid (e.g. 'subscribe:'). A noun may contain colons, so only
+the first one delimits the verb.
 **/
 
 func Subscribe(name string) []byte {
@@ -28,7 +30,14 @@ func Propose(theme string) []byte {
 }
 
 func Set(theme string) []byte {
-	return []byte("set:" + theme + "")
+	return []byte("set:" + theme + "\n")
+}
+
+// Palette carries the resolved colors of the theme a set is about to name, so
+// a client that cannot read shades.yaml itself does not have to keep its own
+// copy of the palette. It is always sent before the set it belongs to.
+func Palette(payload string) []byte {
+	return []byte("palette:" + payload + "\n")
 }
 
 func Get() []byte {
