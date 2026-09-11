@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -96,7 +97,7 @@ func (s *server) talkToClient(
 		}
 
 		logger.With("message", msg).Debug("received message from client")
-		parts := strings.Split(msg, ":")
+		parts := strings.SplitN(msg, ":", 2)
 		verb := parts[0]
 		switch verb {
 		case "subscribe":
@@ -104,9 +105,12 @@ func (s *server) talkToClient(
 		case "unsubscribe":
 			unsubscribe(mutex, clients, conn)
 		case "propose":
-			proposedTheme := parts[1]
+			// the client's own trailing newline has to come off here: protocol.Set
+			// supplies the delimiter, so keeping this one would end every broadcast
+			// with a blank line.
+			proposedTheme := strings.TrimSpace(parts[1])
 			s.currentTheme.Store(&proposedTheme)
-			broadcast(mutex, clients, protocol.Set(proposedTheme))
+			broadcast(mutex, clients, themeMessage(proposedTheme))
 		case "get":
 			theme := s.currentTheme.Load()
 			if theme == nil {
@@ -125,9 +129,46 @@ func (s *server) talkToClient(
 				}
 			}
 
-			whisper(mutex, conn, protocol.Set(*theme))
+			whisper(mutex, conn, themeMessage(*theme))
 		}
 	}
+}
+
+// themeMessage renders everything a client needs to re-theme. The palette
+// comes first so the colors are in hand by the time set names the theme, and
+// both lines go out in one write so a concurrent propose cannot interleave
+// somebody else's palette between this pair.
+func themeMessage(themeAndVariant string) []byte {
+	set := protocol.Set(themeAndVariant)
+
+	palette, err := paletteMessage(themeAndVariant)
+	if err != nil {
+		zap.S().Warnw("could not resolve palette, sending set alone", "theme", themeAndVariant, "error", err)
+		return set
+	}
+
+	return append(palette, set...)
+}
+
+// paletteMessage resolves a theme id into its colors. The daemon already reads
+// shades.yaml, so resolving here saves every client from having to.
+func paletteMessage(themeAndVariant string) ([]byte, error) {
+	config, err := client.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	variant, err := config.Themes.GetVariant(themeAndVariant)
+	if err != nil {
+		return nil, err
+	}
+
+	payload, err := json.Marshal(variant.Colors)
+	if err != nil {
+		return nil, err
+	}
+
+	return protocol.Palette(string(payload)), nil
 }
 
 func subscribe(mutex *sync.Mutex, clients *[]net.Conn, conn net.Conn) {
