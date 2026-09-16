@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
+	"strings"
 	"sync"
 	"text/template"
 
@@ -18,37 +20,80 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const usage = `shades usage:
-	Install as a launchd daemon:
-	shades install
-	shades uninstall
+const interactiveFlags = `  -d, --dark    Only dark variants
+  -l, --light   Only light variants
+  --tmux        Use fzf-tmux, a floating tmux window`
 
-	Start server mode:
-	shades -s
+func usage() string {
+	return fmt.Sprintf(`shades - synchronize color themes across your terminal tools
 
-	Start clients:
-	shades -c client1 client2
+USAGE
+  shades [command] [arguments]
 
-	List available clients;
-	shades -l
+  With no command, shades toggles between your default themes.
 
-	Change the theme:
-	shades dark
-	shades d
-	shades light
-	shades l
+COMMANDS
+  dark, d                     Switch to defaultDarkTheme
+  light, l                    Switch to defaultLightTheme
+  toggle, t                   Flip between them, based on the current macOS appearance
+  set <theme;variant>         Switch to a specific theme
+  preview, p <theme;variant>  Print a theme's palette as swatches
+  interactive, i [flags]      Pick a theme in an fzf window, with live preview
+  -l                          List every theme;variant in your config
+  -s                          Run the server (required for anything else to work)
+  -c <client>...              Run one or more clients in the foreground
+  install                     Install the server and clients as launchd agents
+  uninstall                   Remove the launchd agents
+  -h, --help                  Show this help
 
-	Toggle the theme:
-	shades toggle
-	shades t
+INTERACTIVE FLAGS
+%s
 
-  Interactively pick the theme:
-  shades interactive
-  shades i
+CLIENTS (for -c)
+%s
 
-  Preview a theme:
-  shades preview
-  shades p`
+CONFIGURATION
+  $SHADES_CONFIG, else ~/.config/shades/shades.yaml
+  Logs: ~/.shades/logs
+
+EXAMPLES
+  shades set everforest;dark-medium
+  shades i --dark
+  shades -c tmux ghostty bat`, interactiveFlags, clientList())
+}
+
+// clientList renders the client names as indented rows, to keep the help text
+// inside 80 columns as clients are added.
+func clientList() string {
+	const perRow = 6
+
+	names := clientNames()
+	rows := []string{}
+	for i := 0; i < len(names); i += perRow {
+		end := min(i+perRow, len(names))
+		rows = append(rows, "  "+strings.Join(names[i:end], "  "))
+	}
+
+	return strings.Join(rows, "\n")
+}
+
+func clientNames() []string {
+	names := []string{}
+	for name := range newClients() {
+		names = append(names, name)
+	}
+	slices.Sort(names)
+
+	return names
+}
+
+// fatalUsage reports a misuse of the CLI and exits. Help that the user asked
+// for goes to stdout, help they're being shown because something went wrong
+// goes here.
+func fatalUsage(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "shades: "+format+"\n", args...)
+	os.Exit(2)
+}
 
 // TODO make this configurable
 const socketPath = "/tmp/theme-change.sock"
@@ -109,40 +154,8 @@ var clientsPlistTemplate = template.Must(template.New("clients-plist").Parse(`<?
 </plist>
 `))
 
-func main() {
-	args := os.Args[1:]
-	mode := "toggle"
-	if len(args) > 0 {
-		mode = args[0]
-	}
-
-	logger := initLogger().Sugar()
-	logger.With("mode", mode, "args", args).Info("starting shades")
-
-	switch mode {
-	case "-h", "--help":
-		fmt.Println(usage)
-		return
-	case "install":
-		if err := runInstall(); err != nil {
-			logger.Fatal("install failed", zap.Error(err))
-		}
-		return
-	case "uninstall":
-		if err := runUninstall(); err != nil {
-			logger.Fatal("uninstall failed", zap.Error(err))
-		}
-		return
-	}
-
-	config, err := client.GetConfig()
-	if err != nil {
-		logger.Fatal("error loading config", zap.Error(err))
-	}
-
-	ctx := context.Background()
-
-	var CLIENTS = map[string]client.Client{
+func newClients() map[string]client.Client {
+	return map[string]client.Client{
 		"alacritty":     client.NewAlacrittyClient(),
 		"bat":           client.NewBatClient(),
 		"btop":          client.NewBtopClient(),
@@ -156,24 +169,82 @@ func main() {
 		"template":      client.NewTemplateClient(),
 		"tmux":          client.NewTMUXClient(),
 	}
+}
+
+var commands = []string{
+	"-c", "-l", "-s",
+	"d", "dark", "l", "light", "t", "toggle",
+	"set", "i", "interactive", "p", "preview",
+	"install", "uninstall",
+}
+
+func main() {
+	args := os.Args[1:]
+	mode := "toggle"
+	if len(args) > 0 {
+		mode = args[0]
+	}
+
+	for _, arg := range args {
+		if arg == "-h" || arg == "--help" {
+			fmt.Println(usage())
+			return
+		}
+	}
+
+	logger := initLogger().Sugar()
+	logger.With("mode", mode, "args", args).Info("starting shades")
+
+	switch mode {
+	case "install":
+		if err := runInstall(); err != nil {
+			logger.Fatal("install failed", zap.Error(err))
+		}
+		return
+	case "uninstall":
+		if err := runUninstall(); err != nil {
+			logger.Fatal("uninstall failed", zap.Error(err))
+		}
+		return
+	default:
+		// Checked before the config is loaded, so a typo reports the typo
+		// rather than a missing config file.
+		if !slices.Contains(commands, mode) {
+			fmt.Fprintf(os.Stderr, "shades: unknown command %q\n\n%s\n", mode, usage())
+			os.Exit(2)
+		}
+	}
+
+	config, err := client.GetConfig()
+	if err != nil {
+		logger.Fatal("error loading config", zap.Error(err))
+	}
+
+	ctx := context.Background()
+
+	CLIENTS := newClients()
 
 	switch mode {
 	case "-c":
 		wg := sync.WaitGroup{}
 
-		clientNames := args[1:]
-		for _, clientName := range clientNames {
+		requested := args[1:]
+		if len(requested) == 0 {
+			fatalUsage("-c needs at least one client\n\nCLIENTS\n%s", clientList())
+		}
+		for _, clientName := range requested {
+			if _, ok := CLIENTS[clientName]; !ok {
+				fatalUsage("no such client %q\n\nCLIENTS\n%s", clientName, clientList())
+			}
+		}
+
+		for _, clientName := range requested {
 			wg.Add(1)
 
 			go func(clientName string) {
 				defer wg.Done()
 
-				client, ok := CLIENTS[clientName]
-				if !ok {
-					fmt.Printf("no such client %s, ignoring\n", clientName)
-				}
-
-				err := client.Start(socketPath)
+				err := CLIENTS[clientName].Start(socketPath)
 				if err != nil {
 					logger.Fatal("error starting client", zap.String("client", clientName), zap.Error(err))
 				}
@@ -203,7 +274,7 @@ func main() {
 		toggler.Start(ctx, socketPath)
 	case "set":
 		if len(args) < 2 {
-			os.Exit(1)
+			fatalUsage("set needs a <theme;variant> argument\n\nRun 'shades -l' to list the themes in your config.")
 		}
 		client.ChangerClient{Theme: args[1]}.Start(ctx, socketPath)
 	case "i", "interactive":
@@ -219,10 +290,12 @@ func main() {
 				onlyLight = true
 			case "-d", "--dark":
 				onlyDark = true
+			default:
+				fatalUsage("unknown flag %q for interactive\n\nINTERACTIVE FLAGS\n%s", args[i], interactiveFlags)
 			}
 		}
 		if onlyLight && onlyDark {
-			logger.Fatal("cannot specify both only-light and only-dark")
+			fatalUsage("cannot specify both --light and --dark")
 		}
 
 		_, err := picker.NewPicker().Start(picker.PickerOpts{
@@ -235,9 +308,8 @@ func main() {
 			logger.Fatal(err.Error())
 		}
 	case "p", "preview":
-		if len(args) < 1 {
-			fmt.Println(args)
-			os.Exit(1)
+		if len(args) < 2 {
+			fatalUsage("preview needs a <theme;variant> argument\n\nRun 'shades -l' to list the themes in your config.")
 		}
 		theme, err := config.Themes.GetVariant(args[1])
 		if err != nil {
