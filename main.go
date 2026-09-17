@@ -37,6 +37,7 @@ COMMANDS
   light, l                    Switch to defaultLightTheme
   toggle, t                   Flip between them, based on the current macOS appearance
   set <theme;variant>         Switch to a specific theme
+  random [flags]              Switch to a random theme (-d dark, -l light)
   preview, p <theme;variant>  Print a theme's palette as swatches
   interactive, i [flags]      Pick a theme in an fzf window, with live preview
   gallery [flags]             Print every palette at once, one row per variant
@@ -176,7 +177,7 @@ var commands = []string{
 	"-c", "-l", "-s",
 	"d", "dark", "l", "light", "t", "toggle",
 	"set", "i", "interactive", "p", "preview",
-	"gallery",
+	"gallery", "random",
 	"install", "uninstall",
 }
 
@@ -279,6 +280,8 @@ func main() {
 			fatalUsage("set needs a <theme;variant> argument\n\nRun 'shades -l' to list the themes in your config.")
 		}
 		client.ChangerClient{Theme: args[1]}.Start(ctx, socketPath)
+	case "random":
+		runRandom(ctx, config, args[1:])
 	case "i", "interactive":
 		useTmux := false
 		onlyLight := false
