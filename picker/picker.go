@@ -78,7 +78,9 @@ func (p *picker) pick(
 	logger.Debugw("fzfPath", "fzfPath", fzfPath)
 
 	fzfOptions := []string{
-		"--height=44",
+		// A bare number is a line count to fzf, not a percentage, so the
+		// percent sign is what makes the picker fill the terminal.
+		"--height=100%",
 		// save an enter once we've narrowed it down to one
 		"--bind=one:accept",
 		// live preview
@@ -86,12 +88,18 @@ func (p *picker) pick(
 		"--preview=shades preview {}",
 		"--no-scrollbar",
 		"--preview-window",
-		"up,70%,border-none",
+		// The preview is one swatch line per distinct palette color, so sizing
+		// the window to that count shows the whole palette with no dead space
+		// and leaves every other line to the theme list. fzf clamps this if the
+		// terminal is too short to honor it.
+		fmt.Sprintf("up,%d,border-none", len(client.AllColors)),
 		"--cycle",
 	}
 
 	if opts.UseTmux {
-		// floating window
+		// floating window. fzf-tmux appends --no-height after our arguments, so
+		// --height above does nothing here and the popup geometry is the only
+		// height control on this path.
 		fzfOptions = append([]string{
 			"-w 50%",
 		}, fzfOptions...)
