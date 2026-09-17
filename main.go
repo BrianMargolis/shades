@@ -39,6 +39,7 @@ COMMANDS
   set <theme;variant>         Switch to a specific theme
   preview, p <theme;variant>  Print a theme's palette as swatches
   interactive, i [flags]      Pick a theme in an fzf window, with live preview
+  gallery [flags]             Print every palette at once, one row per variant
   -l                          List every theme;variant in your config
   -s                          Run the server (required for anything else to work)
   -c <client>...              Run one or more clients in the foreground
@@ -175,6 +176,7 @@ var commands = []string{
 	"-c", "-l", "-s",
 	"d", "dark", "l", "light", "t", "toggle",
 	"set", "i", "interactive", "p", "preview",
+	"gallery",
 	"install", "uninstall",
 }
 
@@ -320,6 +322,8 @@ func main() {
 			logger.Fatal(err.Error())
 		}
 		fmt.Println(swatches)
+	case "gallery":
+		runGallery(config, args)
 	}
 }
 

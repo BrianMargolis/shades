@@ -10,6 +10,7 @@ import (
 
 type Previewer interface {
 	Preview(theme client.ThemeVariant) (string, error)
+	Swatches(theme client.ThemeVariant) string
 }
 
 type previewer struct {
@@ -42,6 +43,22 @@ func (p *previewer) Preview(theme client.ThemeVariant) (string, error) {
 	}
 
 	return strings.Join(swatches, "\n"), nil
+}
+
+// Swatches renders a palette as a single compact line, for the gallery.
+//
+// Unlike Preview, it emits one swatch per entry in client.AllColors instead of
+// skipping hex codes it has already seen. Deduping would give palettes with
+// repeated colors shorter lines, and the gallery stacks these rows on top of
+// each other, so the columns have to line up for the themes to be comparable.
+func (p *previewer) Swatches(theme client.ThemeVariant) string {
+	var line strings.Builder
+	for _, color := range client.AllColors {
+		r, g, b := hexToRGB(theme.Colors[color])
+		fmt.Fprintf(&line, "\033[48;2;%d;%d;%dm  \033[0m", r, g, b)
+	}
+
+	return line.String()
 }
 
 // hexToRGB converts a hex color code (e.g., "#1d2021") to RGB values

@@ -38,12 +38,14 @@ shades toggle # or shades t
 
 Themes are identified as `theme;variant`, and `dark`/`light` are just shorthand
 for the two you've nominated as defaults in your config. You can set any theme
-directly, list them all, or preview one:
+directly, list them all, preview one, or see every palette at once:
 
 ```sh
 shades set everforest;dark-medium
 shades -l                            # every theme;variant in your config
 shades preview everforest;dark-medium # print the palette as swatches
+shades gallery                       # every palette, one compact row per variant
+shades gallery --dark                # only dark variants (--light for light)
 ```
 
 There's also an interactive picker, which is an `fzf` window that previews each
