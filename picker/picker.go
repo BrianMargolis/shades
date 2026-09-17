@@ -83,8 +83,9 @@ func (p *picker) pick(
 		"--height=100%",
 		// save an enter once we've narrowed it down to one
 		"--bind=one:accept",
-		// live preview
-		"--bind=focus:execute(shades set {})",
+		// live preview. execute would switch to the alternate screen on every
+		// focus change, flashing the whole picker once per keypress.
+		"--bind=focus:execute-silent(shades set {})",
 		"--preview=shades preview {}",
 		"--no-scrollbar",
 		"--preview-window",
