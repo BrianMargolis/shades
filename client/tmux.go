@@ -1,6 +1,8 @@
 package client
 
 import (
+	"strings"
+
 	"go.uber.org/zap"
 )
 
@@ -19,6 +21,8 @@ func (t TMUXClient) set(theme ThemeVariant) error {
 	if err != nil {
 		return err
 	}
+
+	theme = lowercaseColors(theme)
 
 	for _, optionName := range []string{
 		"status-bg",
@@ -43,6 +47,21 @@ func (t TMUXClient) set(theme ThemeVariant) error {
 	}
 
 	return nil
+}
+
+// lowercaseColors downcases every hex value before it reaches a tmux format
+// string. tmux expands "#X" as a legacy single-character alias, so an uppercase
+// color like "#D47766" turns into pane_id followed by "47766" wherever the
+// format actually gets expanded (inside a "#{?...}" branch, for instance). Hex
+// digits are 0-9 and a-f, and "#h" is the only lowercase alias tmux defines, so
+// downcasing can never collide.
+func lowercaseColors(theme ThemeVariant) ThemeVariant {
+	colors := make(map[Color]string, len(theme.Colors))
+	for name, value := range theme.Colors {
+		colors[name] = strings.ToLower(value)
+	}
+	theme.Colors = colors
+	return theme
 }
 
 func (t TMUXClient) setTMUXOption(optionName, value string) error {
