@@ -28,14 +28,30 @@ func (a GhosttyClient) set(theme ThemeVariant) error {
 	path := ExpandTilde(config.Client["ghostty"]["path"])
 	zap.S().Debugw("applying theme", "client", "ghostty", "theme", theme.ThemeName, "variant", theme.VariantName, "path", path)
 
-	// clear out the file and replace it with `theme = <theme>`
+	// clear out the file and rewrite it from scratch
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open ghostty config file: %w", err)
 	}
 	defer f.Close()
 
-	if _, err = f.WriteString(fmt.Sprintf("theme = \"%s-%s\"\n", theme.ThemeName, theme.VariantName)); err != nil {
+	contents := fmt.Sprintf("theme = \"%s-%s\"\n", theme.ThemeName, theme.VariantName)
+
+	// Every theme file under ghostty/themes sets cursor-color to that theme's
+	// foreground, so without these the cursor is exactly the color of the text
+	// around it. They belong in this file, rather than one rendered by the
+	// `template` client, because this client is also what signals the reload
+	// below: the two are separate socket subscribers, so a separately rendered
+	// file still holds the previous theme's colors when ghostty re-reads its
+	// config.
+	if value := config.Client["ghostty"]["cursor-color"]; value != "" {
+		contents += fmt.Sprintf("cursor-color = %s\n", DoTemplate(value, theme))
+	}
+	if value := config.Client["ghostty"]["cursor-text"]; value != "" {
+		contents += fmt.Sprintf("cursor-text = %s\n", DoTemplate(value, theme))
+	}
+
+	if _, err = f.WriteString(contents); err != nil {
 		return fmt.Errorf("failed to write to ghostty config file: %w", err)
 	}
 

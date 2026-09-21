@@ -33,6 +33,8 @@ func (t TMUXClient) set(theme ThemeVariant) error {
 		"status-right",
 		"status-format[1]",
 		"clock-mode-colour",
+		"window-style",
+		"cursor-colour",
 	} {
 		template, ok := config.Client["tmux"][optionName]
 		if !ok {
