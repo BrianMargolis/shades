@@ -45,6 +45,12 @@ func GetConfig() (ConfigModel, error) {
 		return ConfigModel{}, err
 	}
 
+	state, err := GetState()
+	if err != nil {
+		return ConfigModel{}, err
+	}
+	state.applyTo(&config)
+
 	return config, nil
 }
 

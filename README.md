@@ -63,6 +63,16 @@ shades i --favorites      # only variants marked favorite: true
 shades i --tmux           # use fzf-tmux, i.e. a floating tmux window
 ```
 
+Once you've landed on a theme you like, you can keep it around without opening
+your config:
+
+```sh
+shades favorite           # or shades fav; mark the current theme a favorite
+shades unfavorite         # or shades unfav
+shades default            # make it the default dark or light theme, per its variant
+shades state              # print what these have saved
+```
+
 However, for any of this to do anything, you'll need to set up the server and at
 least one client.
 
@@ -152,6 +162,14 @@ themes:
           # ... BGDIM, BG1-BG5, RED, ORANGE, YELLOW, GREEN, BLUE, AQUA,
           # PURPLE, GRAY1-GRAY3
 ```
+
+`shades favorite`, `unfavorite` and `default` never touch `shades.yaml`.
+They write to a separate state file (`$SHADES_STATE`, else
+`~/.shades/state.yaml`) that's laid over your config when it loads. A default
+there wins over the config's, and a favorite there wins in either direction, so
+`shades unfavorite` works on a variant the config tags. The state file is local
+to the machine, so copy anything you want to keep everywhere into
+`shades.yaml`.
 
 Anything without a dedicated client can usually be handled by the `template`
 client, which renders a file per entry in `templates`. Placeholders are color

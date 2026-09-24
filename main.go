@@ -42,6 +42,10 @@ COMMANDS
   preview, p <theme;variant>  Print a theme's palette as swatches
   interactive, i [flags]      Pick a theme in an fzf window, with live preview
   gallery [flags]             Print every palette at once, one row per variant
+  favorite, fav               Mark the current theme as a favorite
+  unfavorite, unfav           Unmark the current theme as a favorite
+  default                     Make the current theme the dark or light default
+  state                       Print what shades has saved over your config
   -l                          List every theme;variant in your config
   -s                          Run the server (required for anything else to work)
   -c <client>...              Run one or more clients in the foreground
@@ -57,6 +61,7 @@ CLIENTS (for -c)
 
 CONFIGURATION
   $SHADES_CONFIG, else ~/.config/shades/shades.yaml
+  State: $SHADES_STATE, else ~/.shades/state.yaml
   Logs: ~/.shades/logs
 
 EXAMPLES
@@ -96,6 +101,14 @@ func clientNames() []string {
 func fatalUsage(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "shades: "+format+"\n", args...)
 	os.Exit(2)
+}
+
+// fatal reports a runtime failure and exits. The logger only writes to the
+// log file, so this also prints to stderr for the user at the terminal.
+func fatal(message string, err error) {
+	zap.S().Errorw(message, "error", err)
+	fmt.Fprintf(os.Stderr, "shades: %s: %v\n", message, err)
+	os.Exit(1)
 }
 
 // TODO make this configurable
@@ -179,6 +192,7 @@ var commands = []string{
 	"d", "dark", "l", "light", "t", "toggle",
 	"set", "i", "interactive", "p", "preview",
 	"gallery", "random",
+	"favorite", "fav", "unfavorite", "unfav", "default", "state",
 	"install", "uninstall",
 }
 
@@ -332,6 +346,14 @@ func main() {
 		fmt.Println(swatches)
 	case "gallery":
 		runGallery(config, args)
+	case "favorite", "fav":
+		runFavorite(config, true)
+	case "unfavorite", "unfav":
+		runFavorite(config, false)
+	case "default":
+		runDefault(config)
+	case "state":
+		runState()
 	}
 }
 
