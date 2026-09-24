@@ -11,8 +11,9 @@ import (
 	"go.uber.org/zap"
 )
 
-const randomFlags = `  -d, --dark    Only dark variants
-  -l, --light   Only light variants`
+const randomFlags = `  -d, --dark        Only dark variants
+  -l, --light       Only light variants
+  -f, --favorites   Only variants marked favorite: true`
 
 // runRandom picks one theme variant at random and switches to it, printing the
 // pick so the user can name the theme they just landed on.
@@ -21,6 +22,7 @@ func runRandom(ctx context.Context, config client.ConfigModel, args []string) {
 
 	onlyLight := false
 	onlyDark := false
+	onlyFavorites := false
 
 	for _, arg := range args {
 		switch arg {
@@ -28,6 +30,8 @@ func runRandom(ctx context.Context, config client.ConfigModel, args []string) {
 			onlyLight = true
 		case "-d", "--dark":
 			onlyDark = true
+		case "-f", "--favorites":
+			onlyFavorites = true
 		default:
 			fatalUsage("unknown flag %q for random\n\nRANDOM FLAGS\n%s", arg, randomFlags)
 		}
@@ -36,8 +40,14 @@ func runRandom(ctx context.Context, config client.ConfigModel, args []string) {
 		fatalUsage("cannot specify both --light and --dark")
 	}
 
-	candidates := randomCandidates(config, onlyDark, onlyLight)
-	logger.Debugw("random candidates", "count", len(candidates), "onlyDark", onlyDark, "onlyLight", onlyLight)
+	candidates := randomCandidates(config, onlyDark, onlyLight, onlyFavorites)
+	logger.Debugw(
+		"random candidates",
+		"count", len(candidates),
+		"onlyDark", onlyDark,
+		"onlyLight", onlyLight,
+		"onlyFavorites", onlyFavorites,
+	)
 
 	if len(candidates) == 0 {
 		scope := "theme variants"
@@ -45,6 +55,9 @@ func runRandom(ctx context.Context, config client.ConfigModel, args []string) {
 			scope = "dark theme variants"
 		} else if onlyLight {
 			scope = "light theme variants"
+		}
+		if onlyFavorites {
+			fatalUsage("no favorite %s in your config\n\nMark a variant with 'favorite: true' to add it.", scope)
 		}
 		fatalUsage("no %s in your config\n\nRun 'shades -l' to list the themes in your config.", scope)
 	}
@@ -64,7 +77,7 @@ func runRandom(ctx context.Context, config client.ConfigModel, args []string) {
 //
 // The result is sorted so the index rand.IntN produces maps to a stable
 // variant, independent of Go's randomized map iteration order.
-func randomCandidates(config client.ConfigModel, onlyDark, onlyLight bool) []string {
+func randomCandidates(config client.ConfigModel, onlyDark, onlyLight, onlyFavorites bool) []string {
 	candidates := []string{}
 	for themeName, theme := range config.Themes {
 		for variantName, variant := range theme.Variants {
@@ -72,6 +85,9 @@ func randomCandidates(config client.ConfigModel, onlyDark, onlyLight bool) []str
 				continue
 			}
 			if onlyDark && variant.Light {
+				continue
+			}
+			if onlyFavorites && !variant.Favorite {
 				continue
 			}
 			candidates = append(candidates, fmt.Sprintf("%s;%s", themeName, variantName))

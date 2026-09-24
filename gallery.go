@@ -8,8 +8,9 @@ import (
 	"github.com/brianmargolis/shades/preview"
 )
 
-const galleryFlags = `  -d, --dark    Only dark variants
-  -l, --light   Only light variants`
+const galleryFlags = `  -d, --dark        Only dark variants
+  -l, --light       Only light variants
+  -f, --favorites   Only variants marked favorite: true`
 
 type galleryEntry struct {
 	label   string
@@ -20,6 +21,7 @@ type galleryEntry struct {
 func runGallery(config client.ConfigModel, args []string) {
 	onlyLight := false
 	onlyDark := false
+	onlyFavorites := false
 
 	for i := 1; i < len(args); i++ {
 		switch args[i] {
@@ -27,6 +29,8 @@ func runGallery(config client.ConfigModel, args []string) {
 			onlyLight = true
 		case "-d", "--dark":
 			onlyDark = true
+		case "-f", "--favorites":
+			onlyFavorites = true
 		default:
 			fatalUsage("unknown flag %q for gallery\n\nGALLERY FLAGS\n%s", args[i], galleryFlags)
 		}
@@ -35,15 +39,18 @@ func runGallery(config client.ConfigModel, args []string) {
 		fatalUsage("cannot specify both --light and --dark")
 	}
 
-	entries := galleryEntries(config, onlyDark, onlyLight)
+	entries := galleryEntries(config, onlyDark, onlyLight, onlyFavorites)
 	if len(entries) == 0 {
-		switch {
-		case onlyDark:
-			fmt.Println("No dark variants in your config.")
-		case onlyLight:
-			fmt.Println("No light variants in your config.")
-		default:
-			fmt.Println("No themes in your config.")
+		scope := "themes"
+		if onlyDark {
+			scope = "dark variants"
+		} else if onlyLight {
+			scope = "light variants"
+		}
+		if onlyFavorites {
+			fmt.Printf("No favorite %s in your config. Mark a variant with 'favorite: true' to add it.\n", scope)
+		} else {
+			fmt.Printf("No %s in your config.\n", scope)
 		}
 		return
 	}
@@ -62,7 +69,7 @@ func runGallery(config client.ConfigModel, args []string) {
 // galleryEntries collects the variants to render, sorted by theme and then by
 // variant. Sorting isn't cosmetic: ranging over the config's maps directly
 // would reshuffle the gallery on every run.
-func galleryEntries(config client.ConfigModel, onlyDark, onlyLight bool) []galleryEntry {
+func galleryEntries(config client.ConfigModel, onlyDark, onlyLight, onlyFavorites bool) []galleryEntry {
 	themeNames := make([]string, 0, len(config.Themes))
 	for themeName := range config.Themes {
 		themeNames = append(themeNames, themeName)
@@ -85,6 +92,9 @@ func galleryEntries(config client.ConfigModel, onlyDark, onlyLight bool) []galle
 				continue
 			}
 			if onlyDark && variant.Light {
+				continue
+			}
+			if onlyFavorites && !variant.Favorite {
 				continue
 			}
 

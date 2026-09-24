@@ -16,10 +16,11 @@ import (
 )
 
 type PickerOpts struct {
-	SocketPath string
-	UseTmux    bool
-	OnlyDark   bool
-	OnlyLight  bool
+	SocketPath    string
+	UseTmux       bool
+	OnlyDark      bool
+	OnlyLight     bool
+	OnlyFavorites bool
 }
 
 type Picker interface {
@@ -69,6 +70,14 @@ func (p *picker) pick(
 
 	pickerOptions := p.getOptions(config, opts)
 	logger.Debugw("options", "options", pickerOptions)
+	if len(pickerOptions) == 0 {
+		if opts.OnlyFavorites {
+			err = errors.New("no favorite theme variants match; mark a variant with 'favorite: true' to add it")
+		} else {
+			err = errors.New("no theme variants match")
+		}
+		return
+	}
 
 	fzfPath, err := client.LookPath(p.getCommand(opts))
 	if err != nil {
@@ -162,6 +171,9 @@ func (*picker) getOptions(config client.ConfigModel, opts PickerOpts) []string {
 				continue
 			}
 			if opts.OnlyDark && variant.Light {
+				continue
+			}
+			if opts.OnlyFavorites && !variant.Favorite {
 				continue
 			}
 			pickerOptions = append(pickerOptions, fmt.Sprintf("%s;%s", themeName, variantName))

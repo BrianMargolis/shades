@@ -12,8 +12,8 @@ func testConfig() client.ConfigModel {
 		Themes: client.Themes{
 			"everforest": {
 				Variants: map[string]client.ThemeVariant{
-					"dark-medium": {Light: false},
-					"light-soft":  {Light: true},
+					"dark-medium": {Light: false, Favorite: true},
+					"light-soft":  {Light: true, Favorite: true},
 				},
 			},
 			"gruvbox": {
@@ -27,10 +27,11 @@ func testConfig() client.ConfigModel {
 
 func TestRandomCandidates(t *testing.T) {
 	tests := []struct {
-		name      string
-		onlyDark  bool
-		onlyLight bool
-		want      []string
+		name          string
+		onlyDark      bool
+		onlyLight     bool
+		onlyFavorites bool
+		want          []string
 	}{
 		{
 			name: "no filter returns every variant, sorted",
@@ -46,11 +47,22 @@ func TestRandomCandidates(t *testing.T) {
 			onlyLight: true,
 			want:      []string{"everforest;light-soft"},
 		},
+		{
+			name:          "favorites filter drops non-favorites",
+			onlyFavorites: true,
+			want:          []string{"everforest;dark-medium", "everforest;light-soft"},
+		},
+		{
+			name:          "favorites filter combines with dark filter",
+			onlyDark:      true,
+			onlyFavorites: true,
+			want:          []string{"everforest;dark-medium"},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := randomCandidates(testConfig(), test.onlyDark, test.onlyLight)
+			got := randomCandidates(testConfig(), test.onlyDark, test.onlyLight, test.onlyFavorites)
 			if !slices.Equal(got, test.want) {
 				t.Errorf("randomCandidates() = %v, want %v", got, test.want)
 			}
@@ -59,14 +71,14 @@ func TestRandomCandidates(t *testing.T) {
 }
 
 func TestRandomCandidatesEmptyConfig(t *testing.T) {
-	got := randomCandidates(client.ConfigModel{}, false, false)
+	got := randomCandidates(client.ConfigModel{}, false, false, false)
 	if len(got) != 0 {
 		t.Errorf("randomCandidates() = %v, want no candidates", got)
 	}
 }
 
 func TestPickRandomStaysInRange(t *testing.T) {
-	candidates := randomCandidates(testConfig(), false, false)
+	candidates := randomCandidates(testConfig(), false, false, false)
 
 	seen := map[string]bool{}
 	for range 200 {

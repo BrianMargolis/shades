@@ -413,6 +413,7 @@ themes:
     variants:
       light:
         light: true
+        favorite: true
         colors:
           BGDIM: "#f2f0e5"
           BG0: "#fffcf0"
@@ -458,6 +459,7 @@ themes:
     variants:
       fluoromachine:
         light: false
+        favorite: true
         colors:
           BGDIM: "#241B2F"
           BG0: "#262335"

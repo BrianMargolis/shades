@@ -45,10 +45,12 @@ palette at once:
 shades set everforest;dark-medium
 shades random                         # a random theme, printed as it's applied
 shades random --dark                  # only dark variants (--light for light)
+shades random --favorites             # only variants marked favorite: true
 shades -l                             # every theme;variant in your config
 shades preview everforest;dark-medium # print the palette as swatches
 shades gallery                        # every palette, one compact row per variant
 shades gallery --dark                 # only dark variants (--light for light)
+shades gallery --favorites            # only variants marked favorite: true
 ```
 
 There's also an interactive picker, which is an `fzf` window that previews each
@@ -57,6 +59,7 @@ theme as you move through the list and applies the one you pick.
 ```sh
 shades interactive        # or shades i
 shades i --dark           # only dark variants (--light for light)
+shades i --favorites      # only variants marked favorite: true
 shades i --tmux           # use fzf-tmux, i.e. a floating tmux window
 ```
 
@@ -132,7 +135,8 @@ The top-level keys are:
 
 A theme is a named set of variants, and a variant is a `light: true|false` flag
 plus a palette. Every variant defines the same color names, which is what lets
-one config drive every client:
+one config drive every client. A variant can also be marked `favorite: true`,
+which `--favorites` on `random` and `interactive` filters down to:
 
 ```yaml
 themes:
@@ -141,6 +145,7 @@ themes:
     variants:
       dark-medium:
         light: false
+        favorite: true
         colors:
           BG0: "#2D353B"
           FG: "#D3C6AA"

@@ -20,9 +20,10 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const interactiveFlags = `  -d, --dark    Only dark variants
-  -l, --light   Only light variants
-  --tmux        Use fzf-tmux, a floating tmux window`
+const interactiveFlags = `  -d, --dark        Only dark variants
+  -l, --light       Only light variants
+  -f, --favorites   Only variants marked favorite: true
+  --tmux            Use fzf-tmux, a floating tmux window`
 
 func usage() string {
 	return fmt.Sprintf(`shades - synchronize color themes across your terminal tools
@@ -37,7 +38,7 @@ COMMANDS
   light, l                    Switch to defaultLightTheme
   toggle, t                   Flip between them, based on the current macOS appearance
   set <theme;variant>         Switch to a specific theme
-  random [flags]              Switch to a random theme (-d dark, -l light)
+  random [flags]              Switch to a random theme (-d, -l, -f favorites)
   preview, p <theme;variant>  Print a theme's palette as swatches
   interactive, i [flags]      Pick a theme in an fzf window, with live preview
   gallery [flags]             Print every palette at once, one row per variant
@@ -286,6 +287,7 @@ func main() {
 		useTmux := false
 		onlyLight := false
 		onlyDark := false
+		onlyFavorites := false
 
 		for i := 1; i < len(args); i++ {
 			switch args[i] {
@@ -295,6 +297,8 @@ func main() {
 				onlyLight = true
 			case "-d", "--dark":
 				onlyDark = true
+			case "-f", "--favorites":
+				onlyFavorites = true
 			default:
 				fatalUsage("unknown flag %q for interactive\n\nINTERACTIVE FLAGS\n%s", args[i], interactiveFlags)
 			}
@@ -304,10 +308,11 @@ func main() {
 		}
 
 		_, err := picker.NewPicker().Start(picker.PickerOpts{
-			SocketPath: socketPath,
-			UseTmux:    useTmux,
-			OnlyDark:   onlyDark,
-			OnlyLight:  onlyLight,
+			SocketPath:    socketPath,
+			UseTmux:       useTmux,
+			OnlyDark:      onlyDark,
+			OnlyLight:     onlyLight,
+			OnlyFavorites: onlyFavorites,
 		})
 		if err != nil {
 			logger.Fatal(err.Error())

@@ -8,6 +8,7 @@ import (
 
 type ThemeVariant struct {
 	Light       bool             `yaml:"light"`
+	Favorite    bool             `yaml:"favorite"`
 	Colors      map[Color]string `yaml:"colors"`
 	ThemeName   string           // not present in the yaml, gets faked in from the key name
 	VariantName string           // same
