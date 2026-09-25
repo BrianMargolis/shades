@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
+	"slices"
 
 	"github.com/brianmargolis/shades/client"
 
@@ -32,7 +33,12 @@ func runRandom(ctx context.Context, config client.ConfigModel, filter client.Fil
 		return errors.Errorf("no %s in your config; run 'shades list' to see the themes in it", scope)
 	}
 
-	choice := pickRandom(candidates)
+	current, err := client.CurrentTheme(config.GetSocketPath())
+	if err != nil {
+		logger.Debugw("could not get the current theme, so it may be picked again", "error", err)
+	}
+
+	choice := pickRandom(otherThemes(candidates, current))
 	logger.Debugw("random pick", "theme", choice)
 	fmt.Println(choice)
 
@@ -40,6 +46,18 @@ func runRandom(ctx context.Context, config client.ConfigModel, filter client.Fil
 		client.ChangerClient{Theme: choice}.Start(ctx, config.GetSocketPath()),
 		"failed to set theme %s", choice,
 	)
+}
+
+// otherThemes drops the current theme so random always changes something. A
+// lone candidate stays, since there's nothing else to switch to.
+func otherThemes(candidates []string, current string) []string {
+	others := slices.DeleteFunc(slices.Clone(candidates), func(name string) bool {
+		return name == current
+	})
+	if len(others) == 0 {
+		return candidates
+	}
+	return others
 }
 
 func pickRandom(candidates []string) string {
