@@ -2,72 +2,26 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
-	"sync"
 	"text/template"
 
 	"github.com/brianmargolis/shades/client"
-	"github.com/brianmargolis/shades/picker"
-	"github.com/brianmargolis/shades/preview"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-const interactiveFlags = `  -d, --dark        Only dark variants
-  -l, --light       Only light variants
-  -f, --favorites   Only variants marked favorite: true
-  --tmux            Use fzf-tmux, a floating tmux window`
-
-func usage() string {
-	return fmt.Sprintf(`shades - synchronize color themes across your terminal tools
-
-USAGE
-  shades [command] [arguments]
-
-  With no command, shades toggles between your default themes.
-
-COMMANDS
-  dark, d                     Switch to defaultDarkTheme
-  light, l                    Switch to defaultLightTheme
-  toggle, t                   Flip between them, based on the current macOS appearance
-  set <theme;variant>         Switch to a specific theme
-  random [flags]              Switch to a random theme (-d, -l, -f favorites)
-  preview, p <theme;variant>  Print a theme's palette as swatches
-  interactive, i [flags]      Pick a theme in an fzf window, with live preview
-  gallery [flags]             Print every palette at once, one row per variant
-  favorite, fav               Mark the current theme as a favorite
-  unfavorite, unfav           Unmark the current theme as a favorite
-  default                     Make the current theme the dark or light default
-  state                       Print what shades has saved over your config
-  -l                          List every theme;variant in your config
-  -s                          Run the server (required for anything else to work)
-  -c <client>...              Run one or more clients in the foreground
-  install                     Install the server and clients as launchd agents
-  uninstall                   Remove the launchd agents
-  -h, --help                  Show this help
-
-INTERACTIVE FLAGS
-%s
-
-CLIENTS (for -c)
-%s
-
-CONFIGURATION
-  $SHADES_CONFIG, else ~/.config/shades/shades.yaml
-  State: $SHADES_STATE, else ~/.shades/state.yaml
-  Logs: ~/.shades/logs
-
-EXAMPLES
-  shades set everforest;dark-medium
-  shades i --dark
-  shades -c tmux ghostty bat`, interactiveFlags, clientList())
+func main() {
+	if err := newRootCommand().Execute(); err != nil {
+		zap.S().Errorw("command failed", "error", err)
+		fmt.Fprintf(os.Stderr, "shades: %v\n", err)
+		os.Exit(1)
+	}
 }
 
 // clientList renders the client names as indented rows, to keep the help text
@@ -95,25 +49,8 @@ func clientNames() []string {
 	return names
 }
 
-// fatalUsage reports a misuse of the CLI and exits. Help that the user asked
-// for goes to stdout, help they're being shown because something went wrong
-// goes here.
-func fatalUsage(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, "shades: "+format+"\n", args...)
-	os.Exit(2)
-}
-
-// fatal reports a runtime failure and exits. The logger only writes to the
-// log file, so this also prints to stderr for the user at the terminal.
-func fatal(message string, err error) {
-	zap.S().Errorw(message, "error", err)
-	fmt.Fprintf(os.Stderr, "shades: %s: %v\n", message, err)
-	os.Exit(1)
-}
-
 // TODO make this configurable
 const socketPath = "/tmp/theme-change.sock"
-const verbose = false
 
 const serverLaunchdLabel = "com.brianmargolis.shades-server"
 const clientsLaunchdLabel = "com.brianmargolis.shades-embedded-clients"
@@ -127,7 +64,7 @@ var serverPlistTemplate = template.Must(template.New("server-plist").Parse(`<?xm
     <key>ProgramArguments</key>
     <array>
         <string>{{.BinaryPath}}</string>
-        <string>-s</string>
+        <string>server</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
@@ -150,7 +87,7 @@ var clientsPlistTemplate = template.Must(template.New("clients-plist").Parse(`<?
     <key>ProgramArguments</key>
     <array>
         <string>{{.BinaryPath}}</string>
-        <string>-c</string>{{range .Clients}}
+        <string>clients</string>{{range .Clients}}
         <string>{{.}}</string>{{end}}
     </array>
     <key>RunAtLoad</key>
@@ -185,183 +122,6 @@ func newClients() map[string]client.Client {
 		"template":      client.NewTemplateClient(),
 		"tmux":          client.NewTMUXClient(),
 	}
-}
-
-var commands = []string{
-	"-c", "-l", "-s",
-	"d", "dark", "l", "light", "t", "toggle",
-	"set", "i", "interactive", "p", "preview",
-	"gallery", "random",
-	"favorite", "fav", "unfavorite", "unfav", "default", "state",
-	"install", "uninstall",
-	picker.ListCommand, picker.ToggleFavoriteCommand,
-}
-
-func main() {
-	args := os.Args[1:]
-	mode := "toggle"
-	if len(args) > 0 {
-		mode = args[0]
-	}
-
-	for _, arg := range args {
-		if arg == "-h" || arg == "--help" {
-			fmt.Println(usage())
-			return
-		}
-	}
-
-	logger := initLogger().Sugar()
-	logger.With("mode", mode, "args", args).Info("starting shades")
-
-	switch mode {
-	case "install":
-		if err := runInstall(); err != nil {
-			logger.Fatal("install failed", zap.Error(err))
-		}
-		return
-	case "uninstall":
-		if err := runUninstall(); err != nil {
-			logger.Fatal("uninstall failed", zap.Error(err))
-		}
-		return
-	default:
-		// Checked before the config is loaded, so a typo reports the typo
-		// rather than a missing config file.
-		if !slices.Contains(commands, mode) {
-			fmt.Fprintf(os.Stderr, "shades: unknown command %q\n\n%s\n", mode, usage())
-			os.Exit(2)
-		}
-	}
-
-	config, err := client.GetConfig()
-	if err != nil {
-		logger.Fatal("error loading config", zap.Error(err))
-	}
-
-	ctx := context.Background()
-
-	CLIENTS := newClients()
-
-	switch mode {
-	case "-c":
-		wg := sync.WaitGroup{}
-
-		requested := args[1:]
-		if len(requested) == 0 {
-			fatalUsage("-c needs at least one client\n\nCLIENTS\n%s", clientList())
-		}
-		for _, clientName := range requested {
-			if _, ok := CLIENTS[clientName]; !ok {
-				fatalUsage("no such client %q\n\nCLIENTS\n%s", clientName, clientList())
-			}
-		}
-
-		for _, clientName := range requested {
-			wg.Add(1)
-
-			go func(clientName string) {
-				defer wg.Done()
-
-				err := CLIENTS[clientName].Start(socketPath)
-				if err != nil {
-					logger.Fatal("error starting client", zap.String("client", clientName), zap.Error(err))
-				}
-			}(clientName)
-		}
-
-		wg.Wait()
-	case "-l":
-		for themeName, theme := range config.Themes {
-			for variantName := range theme.Variants {
-				fmt.Printf("%s;%s\n", themeName, variantName)
-			}
-		}
-	case "-s":
-		NewServer().Start(socketPath)
-	case "dark", "d":
-		changer := client.ChangerClient{Theme: config.DefaultDarkTheme}
-		changer.Start(ctx, socketPath)
-	case "light", "l":
-		changer := client.ChangerClient{Theme: config.DefaultLightTheme}
-		changer.Start(ctx, socketPath)
-	case "toggle", "t":
-		toggler := client.TogglerClient{
-			DarkTheme:  config.DefaultDarkTheme,
-			LightTheme: config.DefaultLightTheme,
-			Themes:     config.Themes,
-		}
-		if err := toggler.Start(ctx, socketPath); err != nil {
-			fatal("could not toggle the theme", err)
-		}
-	case "set":
-		if len(args) < 2 {
-			fatalUsage("set needs a <theme;variant> argument\n\nRun 'shades -l' to list the themes in your config.")
-		}
-		client.ChangerClient{Theme: args[1]}.Start(ctx, socketPath)
-	case "random":
-		runRandom(ctx, config, args[1:])
-	case "i", "interactive":
-		_, err := picker.NewPicker().Start(parsePickerOpts(args[1:]))
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
-	case picker.ListCommand:
-		for _, line := range picker.Lines(config, parsePickerOpts(args[1:]).Filter) {
-			fmt.Println(line)
-		}
-	case picker.ToggleFavoriteCommand:
-		if len(args) < 2 {
-			fatalUsage("%s needs a <theme;variant> argument", picker.ToggleFavoriteCommand)
-		}
-		runToggleFavorite(config, args[1])
-	case "p", "preview":
-		if len(args) < 2 {
-			fatalUsage("preview needs a <theme;variant> argument\n\nRun 'shades -l' to list the themes in your config.")
-		}
-		theme, err := config.Themes.GetVariant(args[1])
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
-		swatches, err := preview.NewPreviewer().Preview(theme)
-		if err != nil {
-			logger.Fatal(err.Error())
-		}
-		fmt.Println(swatches)
-	case "gallery":
-		runGallery(config, args)
-	case "favorite", "fav":
-		runFavorite(config, true)
-	case "unfavorite", "unfav":
-		runFavorite(config, false)
-	case "default":
-		runDefault(config)
-	case "state":
-		runState()
-	}
-}
-
-func parsePickerOpts(args []string) picker.PickerOpts {
-	opts := picker.PickerOpts{SocketPath: socketPath}
-	for _, arg := range args {
-		switch arg {
-		case "--tmux":
-			opts.UseTmux = true
-		case "-l", "--light":
-			opts.OnlyLight = true
-		case "-d", "--dark":
-			opts.OnlyDark = true
-		case "-f", "--favorites":
-			opts.OnlyFavorites = true
-		default:
-			fatalUsage("unknown flag %q for interactive\n\nINTERACTIVE FLAGS\n%s", arg, interactiveFlags)
-		}
-	}
-	if opts.OnlyLight && opts.OnlyDark {
-		fatalUsage("cannot specify both --light and --dark")
-	}
-
-	return opts
 }
 
 func shadesLogDir() (string, error) {
@@ -402,8 +162,8 @@ func initLogger() *zap.Logger {
 // start automatically at login and restart if they crash.
 //
 // It writes two plists:
-//   - com.brianmargolis.shades-server   (runs: shades -s)
-//   - com.brianmargolis.shades-embedded-clients  (runs: shades -c <clients...>)
+//   - com.brianmargolis.shades-server   (runs: shades server)
+//   - com.brianmargolis.shades-embedded-clients  (runs: shades clients <clients...>)
 func runInstall() error {
 	binaryPath, err := os.Executable()
 	if err != nil {

@@ -37,20 +37,21 @@ shades toggle # or shades t
 ```
 
 Themes are identified as `theme;variant`, and `dark`/`light` are just shorthand
-for the two you've nominated as defaults in your config. You can set any theme
-directly, jump to a random one, list them all, preview one, or see every
-palette at once:
+for the two you've nominated as defaults in your config. Quote the name when you
+type it, since the shell treats a bare `;` as the end of the command. You can
+set any theme directly, jump to a random one, list them all, preview one, or see
+every palette at once:
 
 ```sh
-shades set everforest;dark-medium
-shades random                         # a random theme, printed as it's applied
-shades random --dark                  # only dark variants (--light for light)
-shades random --favorites             # only variants marked favorite: true
-shades -l                             # every theme;variant in your config
-shades preview everforest;dark-medium # print the palette as swatches
-shades gallery                        # every palette, one compact row per variant
-shades gallery --dark                 # only dark variants (--light for light)
-shades gallery --favorites            # only variants marked favorite: true
+shades set 'everforest;dark-medium'
+shades random                           # a random theme, printed as it's applied
+shades random --dark                    # only dark variants (--light for light)
+shades random --favorites               # only variants marked favorite: true
+shades list                             # every theme;variant in your config
+shades preview 'everforest;dark-medium' # print the palette as swatches
+shades gallery                          # every palette, one compact row per variant
+shades gallery --dark                   # only dark variants (--light for light)
+shades gallery --favorites              # only variants marked favorite: true
 ```
 
 There's also an interactive picker, which is an `fzf` window that previews each
@@ -81,8 +82,8 @@ least one client.
 
 ### Step 1/3: setting up the server
 
-For `shades` to work at all, it must be running in server mode (`shades -s`) in
-the background.
+For `shades` to work at all, it must be running in server mode (`shades server`)
+in the background.
 
 ### Step 2/3: setting up clients
 
@@ -101,10 +102,10 @@ batteries are included for many popular tools:
 - tmux
 - template (renders arbitrary files, for anything without a dedicated client)
 
-You run these built-in clients with the `-c` flag.
+You run these built-in clients with `shades clients`.
 
 ```sh
-shades -c tmux ghostty fzf bat btop claude mac mac-wallpaper
+shades clients tmux ghostty fzf bat btop claude mac mac-wallpaper
 ```
 
 The [`shades.nvim`](https://github.com/BrianMargolis/shades.nvim) plugin
@@ -114,9 +115,9 @@ section.
 
 ### Step 3/3: daemonizing (optional but highly recommended)
 
-You can experiment with `shades` by just running `shades -s` and `shades -c
-...` in a terminal, but my recommendation is that you eventually daemonize both
-of these.
+You can experiment with `shades` by just running `shades server` and `shades
+clients ...` in a terminal, but my recommendation is that you eventually
+daemonize both of these.
 
 ```sh
 shades install   # or `just install`, which does a go install first
@@ -127,6 +128,9 @@ This registers two launchd agents (one for the server, one for the clients
 listed under `daemon.enabled-components` in your config) that start at login and
 restart if they crash. It's macOS-only at the moment. Logs land in
 `~/.shades/logs`; `just tail-logs` will follow them.
+
+The agents run the installed binary with its command line baked into their
+plists, so after upgrading `shades`, run `just install` again to rewrite them.
 
 ## Configuration
 

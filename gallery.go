@@ -7,34 +7,13 @@ import (
 	"github.com/brianmargolis/shades/preview"
 )
 
-const galleryFlags = `  -d, --dark        Only dark variants
-  -l, --light       Only light variants
-  -f, --favorites   Only variants marked favorite: true`
-
 type galleryEntry struct {
 	label   string
 	variant client.ThemeVariant
 }
 
 // runGallery prints every theme in the config as one row of swatches each.
-func runGallery(config client.ConfigModel, args []string) {
-	filter := client.Filter{}
-	for i := 1; i < len(args); i++ {
-		switch args[i] {
-		case "-l", "--light":
-			filter.OnlyLight = true
-		case "-d", "--dark":
-			filter.OnlyDark = true
-		case "-f", "--favorites":
-			filter.OnlyFavorites = true
-		default:
-			fatalUsage("unknown flag %q for gallery\n\nGALLERY FLAGS\n%s", args[i], galleryFlags)
-		}
-	}
-	if filter.OnlyLight && filter.OnlyDark {
-		fatalUsage("cannot specify both --light and --dark")
-	}
-
+func runGallery(config client.ConfigModel, filter client.Filter) {
 	entries := galleryEntries(config, filter)
 	if len(entries) == 0 {
 		scope := "themes"
