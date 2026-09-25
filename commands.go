@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"slices"
 	"time"
 
@@ -148,6 +149,20 @@ Logs:   ~/.shades/logs`,
 			},
 		},
 		newPickerListCommand(),
+		&cobra.Command{
+			Use:       picker.FilterCommand + " <action>",
+			Hidden:    true,
+			Args:      cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
+			ValidArgs: picker.FilterActions,
+			RunE: func(cmd *cobra.Command, args []string) error {
+				actions, err := picker.FilterTransform(os.Getenv("FZF_PROMPT"), args[0])
+				if err != nil {
+					return err
+				}
+				fmt.Println(actions)
+				return nil
+			},
+		},
 		&cobra.Command{
 			Use:               picker.ToggleFavoriteCommand + " <theme;variant>",
 			Hidden:            true,

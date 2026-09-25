@@ -66,8 +66,18 @@ shades i --favorites      # only variants marked favorite: true
 shades i --tmux           # use fzf-tmux, i.e. a floating tmux window
 ```
 
-Favorites are starred in the list, and `ctrl-f` toggles the focused theme's
-favorite in place.
+The picker opens on the current theme, and Esc puts back whatever theme was set
+before it opened. Favorites are starred in the list. Inside the picker:
+
+| key      | does                                |
+| -------- | ----------------------------------- |
+| `ctrl-f` | toggle the focused theme's favorite |
+| `alt-d`  | show only dark variants             |
+| `alt-l`  | show only light variants            |
+| `alt-s`  | toggle showing only favorites       |
+| `alt-a`  | show everything                     |
+
+The prompt shows which filters are on.
 
 Once you've landed on a theme you like, you can keep it around without opening
 your config:

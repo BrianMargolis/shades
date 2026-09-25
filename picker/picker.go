@@ -124,15 +124,10 @@ func (p *picker) pick(
 		// keep the cursor on the same theme when a favorite toggle reloads the list
 		"--track",
 		"--id-nth=1",
-		"--header=" + favoriteKey + ": toggle favorite",
+		"--header=" + header(),
+		"--prompt=" + prompt(opts.Filter),
 		// save an enter once we've narrowed it down to one
 		"--bind=one:accept",
-		fmt.Sprintf(
-			"--bind=%s:execute-silent(shades %s {1})+reload(shades %s)",
-			favoriteKey,
-			ToggleFavoriteCommand,
-			strings.Join(append([]string{ListCommand}, opts.Flags()...), " "),
-		),
 		// The preview also applies the theme, after a delay. fzf kills a running
 		// preview when the cursor moves, so scrolling quickly doesn't pile up a
 		// theme change for every line passed over.
@@ -146,6 +141,7 @@ func (p *picker) pick(
 		fmt.Sprintf("up,%d,border-none", len(client.AllColors)),
 		"--cycle",
 	}
+	fzfOptions = append(fzfOptions, filterBindings()...)
 
 	if position, ok := linePosition(pickerOptions, current); ok {
 		fzfOptions = append(fzfOptions,
