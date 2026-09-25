@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -21,18 +22,20 @@ import (
 	"go.uber.org/zap"
 )
 
-const MAX_CLIENTS = 100
+const maxConnections = 100
 
 type Server interface {
 	Start(socketPath string) error
 }
 
 type server struct {
-	currentTheme atomic.Pointer[string]
+	currentTheme   atomic.Pointer[string]
+	connections    atomic.Int32
+	maxConnections int32
 }
 
 func NewServer() Server {
-	return &server{}
+	return &server{maxConnections: maxConnections}
 }
 
 func (s *server) Start(socketPath string) error {
@@ -54,18 +57,33 @@ func (s *server) Start(socketPath string) error {
 	defer os.Remove(socketPath)
 	planForDeath(socket)
 
+	return s.serve(socket)
+}
+
+// serve accepts connections until the listener is closed. Nothing a single
+// client does should end this loop, since every other client's theming goes
+// down with it.
+func (s *server) serve(socket net.Listener) error {
+	logger := zap.S()
+
 	clients := []net.Conn{}
 	clientMutex := sync.Mutex{}
 	for {
-		// wait for the next connection
 		conn, err := socket.Accept()
 		if err != nil {
-			panic(err)
+			if errors.Is(err, net.ErrClosed) {
+				return nil
+			}
+			logger.Warnw("failed to accept connection", "error", err)
+			continue
 		}
 
-		if len(clients) >= MAX_CLIENTS {
-			panic("Too many clients!")
+		if s.connections.Load() >= s.maxConnections {
+			logger.Warnw("too many connections, refusing a new one", "limit", s.maxConnections)
+			conn.Close()
+			continue
 		}
+		s.connections.Add(1)
 
 		go s.talkToClient(conn, &clients, &clientMutex)
 	}
@@ -79,7 +97,10 @@ func (s *server) talkToClient(
 	logger := zap.S()
 
 	logger.Debug("talkToClient: ", conn.RemoteAddr())
-	defer conn.Close()
+	defer func() {
+		conn.Close()
+		s.connections.Add(-1)
+	}()
 
 	r := bufio.NewReader(conn)
 	for {
@@ -97,8 +118,12 @@ func (s *server) talkToClient(
 		}
 
 		logger.With("message", msg).Debug("received message from client")
-		parts := strings.SplitN(msg, ":", 2)
-		verb := parts[0]
+		verb, noun, err := protocol.Parse(msg)
+		if err != nil {
+			logger.Warnw("malformed message from client, skipping", "message", msg, "error", err)
+			continue
+		}
+
 		switch verb {
 		case "subscribe":
 			subscribe(mutex, clients, conn)
@@ -108,7 +133,7 @@ func (s *server) talkToClient(
 			// the client's own trailing newline has to come off here: protocol.Set
 			// supplies the delimiter, so keeping this one would end every broadcast
 			// with a blank line.
-			proposedTheme := strings.TrimSpace(parts[1])
+			proposedTheme := strings.TrimSpace(noun)
 			s.currentTheme.Store(&proposedTheme)
 			broadcast(mutex, clients, themeMessage(proposedTheme))
 		case "get":
