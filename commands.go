@@ -203,6 +203,9 @@ func newInteractiveCommand() *cobra.Command {
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, err := picker.NewPicker().Start(opts)
+			if errors.Is(err, picker.ErrCancelled) {
+				return nil
+			}
 			return err
 		},
 	}

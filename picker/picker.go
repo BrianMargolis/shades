@@ -1,13 +1,12 @@
 package picker
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 
 	"github.com/brianmargolis/shades/client"
 
@@ -43,14 +42,30 @@ func NewPicker() Picker {
 	return &picker{}
 }
 
+// ErrCancelled means the user left the picker without choosing a theme.
+var ErrCancelled = errors.New("picker cancelled")
+
 func (p *picker) Start(opts PickerOpts) (result string, err error) {
 	logger := zap.S()
 	logger.Debug("Start")
-	// TODO:
-	// first, get the current theme - if the user bails without picking a theme,
-	// we want to restore that theme as the previewer will have changed it
+
+	// The live preview sets every theme the cursor passes over, so backing out
+	// has to put back the theme from before the picker opened.
+	original, err := client.CurrentTheme(opts.SocketPath)
+	if err != nil {
+		logger.Warnw("could not get the current theme, so cancelling won't restore it", "error", err)
+	}
 
 	result, err = p.pick(logger, opts)
+	if errors.Is(err, ErrCancelled) {
+		logger.Debugw("picker cancelled, restoring the original theme", "theme", original)
+		if original != "" {
+			if restoreErr := (client.ChangerClient{Theme: original}).Start(context.Background(), opts.SocketPath); restoreErr != nil {
+				return "", errors.Wrapf(restoreErr, "failed to restore %s", original)
+			}
+		}
+		return "", err
+	}
 	if err != nil {
 		err = errors.Wrap(err, "failed to pick")
 		logger.Error(err.Error())
@@ -139,46 +154,29 @@ func (p *picker) pick(
 			"-w 50%",
 		}, fzfOptions...)
 	}
+	// fzf draws on and reads keys from /dev/tty, which leaves stdin and stdout
+	// free to carry the list in and the pick out.
+	output := bytes.Buffer{}
 	cmd := exec.Command(fzfPath, fzfOptions...)
-	pipeIn, err := cmd.StdinPipe()
-	if err != nil {
-		err = errors.Wrap(err, "failed to create pipe into fzf")
-		return
-	}
-	pipeIn.Write([]byte(strings.Join(pickerOptions, "\n")))
-	pipeIn.Close()
-
-	pipeOut, err := cmd.StdoutPipe()
-	if err != nil {
-		err = errors.Wrap(err, "failed to get stdout pipe")
-		return
-	}
+	cmd.Stdin = strings.NewReader(strings.Join(pickerOptions, "\n"))
+	cmd.Stdout = &output
 	cmd.Stderr = os.Stderr
 
-	resultBytes := []byte{}
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		resultBytes, err = io.ReadAll(pipeOut)
-		if err != nil {
-			err = errors.Wrap(err, "failed to read pipe output")
-		}
-	}()
-
 	err = cmd.Run()
-	if err != nil {
-		exitErr, ok := err.(*exec.ExitError)
-		if ok {
-			err = errors.Wrapf(err, "fzf exited with status %d: %s", exitErr.ExitCode(), string(exitErr.Stderr))
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		switch exitErr.ExitCode() {
+		// 130 is esc or ctrl-c, and 1 is enter with nothing matching the query
+		case 1, 130:
+			return "", ErrCancelled
 		}
-		return
+		return "", errors.Wrapf(err, "fzf exited with status %d", exitErr.ExitCode())
+	}
+	if err != nil {
+		return "", errors.Wrap(err, "failed to run fzf")
 	}
 
-	wg.Wait()
-	result = string(resultBytes)
-
-	return
+	return strings.TrimSpace(output.String()), nil
 }
 
 func (p *picker) getCommand(opts PickerOpts) string {
