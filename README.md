@@ -166,7 +166,9 @@ Theme names complete with the `;` escaped, so the shell doesn't split them.
 
 The top-level keys are:
 
-- `socket-path` - where the server listens
+- `socket-path` - where the server listens and clients connect, by default
+  `/tmp/theme-change.sock`. Run `just install` after changing it, so the
+  daemons pick it up.
 - `defaultDarkTheme` / `defaultLightTheme` - what `shades dark`, `shades light`
   and `shades toggle` resolve to, as `theme;variant`
 - `themes` - your palettes (see below)

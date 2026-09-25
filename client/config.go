@@ -30,6 +30,16 @@ type DaemonConfig struct {
 	EnabledComponents []string `yaml:"enabled-components"`
 }
 
+const defaultSocketPath = "/tmp/theme-change.sock"
+
+// GetSocketPath is where the server listens and every client connects.
+func (c ConfigModel) GetSocketPath() string {
+	if c.SocketPath != "" {
+		return c.SocketPath
+	}
+	return defaultSocketPath
+}
+
 func GetConfig() (ConfigModel, error) {
 	f, err := os.Open(getConfigPath())
 	if err != nil {

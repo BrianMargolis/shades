@@ -49,9 +49,6 @@ func clientNames() []string {
 	return names
 }
 
-// TODO make this configurable
-const socketPath = "/tmp/theme-change.sock"
-
 const serverLaunchdLabel = "com.brianmargolis.shades-server"
 const clientsLaunchdLabel = "com.brianmargolis.shades-embedded-clients"
 

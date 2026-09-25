@@ -48,7 +48,7 @@ Logs:   ~/.shades/logs`,
 			Short:   "Switch to the default dark theme",
 			Args:    cobra.NoArgs,
 			RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
-				return client.ChangerClient{Theme: config.DefaultDarkTheme}.Start(cmd.Context(), socketPath)
+				return client.ChangerClient{Theme: config.DefaultDarkTheme}.Start(cmd.Context(), config.GetSocketPath())
 			}),
 		},
 		&cobra.Command{
@@ -57,7 +57,7 @@ Logs:   ~/.shades/logs`,
 			Short:   "Switch to the default light theme",
 			Args:    cobra.NoArgs,
 			RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
-				return client.ChangerClient{Theme: config.DefaultLightTheme}.Start(cmd.Context(), socketPath)
+				return client.ChangerClient{Theme: config.DefaultLightTheme}.Start(cmd.Context(), config.GetSocketPath())
 			}),
 		},
 		&cobra.Command{
@@ -80,9 +80,9 @@ Logs:   ~/.shades/logs`,
 			Short:             "Switch to a specific theme",
 			Args:              themeArg,
 			ValidArgsFunction: completeThemes,
-			RunE: func(cmd *cobra.Command, args []string) error {
-				return client.ChangerClient{Theme: args[0]}.Start(cmd.Context(), socketPath)
-			},
+			RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
+				return client.ChangerClient{Theme: args[0]}.Start(cmd.Context(), config.GetSocketPath())
+			}),
 		},
 		newRandomCommand(),
 		newInteractiveCommand(),
@@ -127,9 +127,9 @@ Logs:   ~/.shades/logs`,
 			Use:   "server",
 			Short: "Run the server, which every other command talks to",
 			Args:  cobra.NoArgs,
-			RunE: func(cmd *cobra.Command, args []string) error {
-				return NewServer().Start(socketPath)
-			},
+			RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
+				return NewServer().Start(config.GetSocketPath())
+			}),
 		},
 		newClientsCommand(),
 		&cobra.Command{
@@ -193,19 +193,20 @@ func newRandomCommand() *cobra.Command {
 }
 
 func newInteractiveCommand() *cobra.Command {
-	opts := picker.PickerOpts{SocketPath: socketPath}
+	opts := picker.PickerOpts{}
 	command := &cobra.Command{
 		Use:     "interactive",
 		Aliases: []string{"i"},
 		Short:   "Pick a theme in an fzf window, with live preview",
 		Args:    cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
+			opts.SocketPath = config.GetSocketPath()
 			_, err := picker.NewPicker().Start(opts)
 			if errors.Is(err, picker.ErrCancelled) {
 				return nil
 			}
 			return err
-		},
+		}),
 	}
 	addFilterFlags(command, &opts.Filter)
 	command.Flags().BoolVar(&opts.UseTmux, "tmux", false, "use fzf-tmux, a floating tmux window")
@@ -240,7 +241,7 @@ func newPreviewCommand() *cobra.Command {
 				return nil
 			}
 			time.Sleep(previewApplyDelay)
-			return client.ChangerClient{Theme: args[0]}.Start(cmd.Context(), socketPath)
+			return client.ChangerClient{Theme: args[0]}.Start(cmd.Context(), config.GetSocketPath())
 		}),
 	}
 	command.Flags().BoolVar(&apply, "apply", false, "also switch to the theme after a short delay, for the picker")
@@ -306,9 +307,9 @@ func newClientsCommand() *cobra.Command {
 			}
 			return remaining, cobra.ShellCompDirectiveNoFileComp
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runClients(args)
-		},
+		RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
+			return runClients(args, config.GetSocketPath())
+		}),
 	}
 }
 
@@ -369,12 +370,12 @@ func runToggle(cmd *cobra.Command, config client.ConfigModel, args []string) err
 		LightTheme: config.DefaultLightTheme,
 		Themes:     config.Themes,
 	}
-	return errors.Wrap(toggler.Start(cmd.Context(), socketPath), "could not toggle the theme")
+	return errors.Wrap(toggler.Start(cmd.Context(), config.GetSocketPath()), "could not toggle the theme")
 }
 
 // runClients runs each client until they all finish, and stops at the first
 // one that fails.
-func runClients(names []string) error {
+func runClients(names []string, socketPath string) error {
 	clients := newClients()
 	results := make(chan error, len(names))
 	for _, name := range names {

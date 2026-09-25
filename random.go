@@ -37,7 +37,7 @@ func runRandom(ctx context.Context, config client.ConfigModel, filter client.Fil
 	fmt.Println(choice)
 
 	return errors.Wrapf(
-		client.ChangerClient{Theme: choice}.Start(ctx, socketPath),
+		client.ChangerClient{Theme: choice}.Start(ctx, config.GetSocketPath()),
 		"failed to set theme %s", choice,
 	)
 }

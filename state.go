@@ -15,7 +15,7 @@ import (
 // the config catches a server that is still holding a theme since removed from
 // shades.yaml, before that theme gets written into the state file.
 func currentVariant(config client.ConfigModel) (string, client.ThemeVariant, error) {
-	current, err := client.CurrentTheme(socketPath)
+	current, err := client.CurrentTheme(config.GetSocketPath())
 	if err != nil {
 		return "", client.ThemeVariant{}, errors.Wrap(err, "could not get the current theme (is 'shades server' running?)")
 	}
