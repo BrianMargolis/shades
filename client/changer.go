@@ -67,34 +67,34 @@ func CurrentTheme(socketName string) (string, error) {
 type TogglerClient struct {
 	DarkTheme  string
 	LightTheme string
+	Themes     Themes
 }
 
 func (c TogglerClient) Start(ctx context.Context, socketName string) error {
-	currentTheme, err := c.getCurrentTheme()
+	currentTheme, err := CurrentTheme(socketName)
 	if err != nil {
 		return errors.Wrap(err, "could not get current theme")
 	}
 
-	newTheme := c.LightTheme
-	if currentTheme == c.LightTheme {
-		newTheme = c.DarkTheme
+	newTheme, err := c.opposite(currentTheme)
+	if err != nil {
+		return err
 	}
 
 	changerClient := ChangerClient{Theme: newTheme}
 	return changerClient.Start(ctx, socketName)
 }
 
-func (c TogglerClient) getCurrentTheme() (string, error) {
-	script := `tell application "System Events" to tell appearance preferences to get dark mode`
-
-	output, err := RunApplescript(script)
+// opposite picks the default theme on the other side of the current one, so
+// toggling away from any light theme lands on the default dark and vice versa.
+func (c TogglerClient) opposite(currentTheme string) (string, error) {
+	variant, err := c.Themes.GetVariant(currentTheme)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "the current theme %q isn't in your config", currentTheme)
 	}
 
-	if strings.TrimSpace(string(output)) == "true" {
+	if variant.Light {
 		return c.DarkTheme, nil
-	} else {
-		return c.LightTheme, nil
 	}
+	return c.LightTheme, nil
 }

@@ -288,8 +288,11 @@ func main() {
 		toggler := client.TogglerClient{
 			DarkTheme:  config.DefaultDarkTheme,
 			LightTheme: config.DefaultLightTheme,
+			Themes:     config.Themes,
 		}
-		toggler.Start(ctx, socketPath)
+		if err := toggler.Start(ctx, socketPath); err != nil {
+			fatal("could not toggle the theme", err)
+		}
 	case "set":
 		if len(args) < 2 {
 			fatalUsage("set needs a <theme;variant> argument\n\nRun 'shades -l' to list the themes in your config.")
