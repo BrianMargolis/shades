@@ -127,17 +127,7 @@ Logs:   ~/.shades/logs`,
 				return runState()
 			},
 		},
-		&cobra.Command{
-			Use:   "list",
-			Short: "List every theme;variant in your config",
-			Args:  cobra.NoArgs,
-			RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
-				for _, name := range config.Themes.Names(client.Filter{}) {
-					fmt.Println(name)
-				}
-				return nil
-			}),
-		},
+		newListCommand(),
 		&cobra.Command{
 			Use:   "server",
 			Short: "Run the server, which every other command talks to",
@@ -216,6 +206,23 @@ func newGalleryCommand() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
 			runGallery(config, filter)
+			return nil
+		}),
+	}
+	addFilterFlags(command, &filter)
+	return command
+}
+
+func newListCommand() *cobra.Command {
+	filter := client.Filter{}
+	command := &cobra.Command{
+		Use:   "list",
+		Short: "List every theme;variant in your config",
+		Args:  cobra.NoArgs,
+		RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
+			for _, name := range config.Themes.Names(filter) {
+				fmt.Println(name)
+			}
 			return nil
 		}),
 	}

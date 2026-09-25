@@ -48,6 +48,7 @@ shades random                           # a random theme, printed as it's applie
 shades random --dark                    # only dark variants (--light for light)
 shades random --favorites               # only variants marked favorite: true
 shades list                             # every theme;variant in your config
+shades list --favorites                 # --dark, --light, and --favorites work here too
 shades preview 'everforest;dark-medium' # print the palette as swatches
 shades gallery                          # every palette, one compact row per variant
 shades gallery --dark                   # only dark variants (--light for light)
