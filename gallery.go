@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"slices"
 
 	"github.com/brianmargolis/shades/client"
 	"github.com/brianmargolis/shades/preview"
@@ -19,35 +18,32 @@ type galleryEntry struct {
 
 // runGallery prints every theme in the config as one row of swatches each.
 func runGallery(config client.ConfigModel, args []string) {
-	onlyLight := false
-	onlyDark := false
-	onlyFavorites := false
-
+	filter := client.Filter{}
 	for i := 1; i < len(args); i++ {
 		switch args[i] {
 		case "-l", "--light":
-			onlyLight = true
+			filter.OnlyLight = true
 		case "-d", "--dark":
-			onlyDark = true
+			filter.OnlyDark = true
 		case "-f", "--favorites":
-			onlyFavorites = true
+			filter.OnlyFavorites = true
 		default:
 			fatalUsage("unknown flag %q for gallery\n\nGALLERY FLAGS\n%s", args[i], galleryFlags)
 		}
 	}
-	if onlyLight && onlyDark {
+	if filter.OnlyLight && filter.OnlyDark {
 		fatalUsage("cannot specify both --light and --dark")
 	}
 
-	entries := galleryEntries(config, onlyDark, onlyLight, onlyFavorites)
+	entries := galleryEntries(config, filter)
 	if len(entries) == 0 {
 		scope := "themes"
-		if onlyDark {
+		if filter.OnlyDark {
 			scope = "dark variants"
-		} else if onlyLight {
+		} else if filter.OnlyLight {
 			scope = "light variants"
 		}
-		if onlyFavorites {
+		if filter.OnlyFavorites {
 			fmt.Printf("No favorite %s in your config. Mark a variant with 'favorite: true' to add it.\n", scope)
 		} else {
 			fmt.Printf("No %s in your config.\n", scope)
@@ -66,45 +62,14 @@ func runGallery(config client.ConfigModel, args []string) {
 	}
 }
 
-// galleryEntries collects the variants to render, sorted by theme and then by
-// variant. Sorting isn't cosmetic: ranging over the config's maps directly
-// would reshuffle the gallery on every run.
-func galleryEntries(config client.ConfigModel, onlyDark, onlyLight, onlyFavorites bool) []galleryEntry {
-	themeNames := make([]string, 0, len(config.Themes))
-	for themeName := range config.Themes {
-		themeNames = append(themeNames, themeName)
-	}
-	slices.Sort(themeNames)
-
+func galleryEntries(config client.ConfigModel, filter client.Filter) []galleryEntry {
 	entries := []galleryEntry{}
-	for _, themeName := range themeNames {
-		theme := config.Themes[themeName]
-
-		variantNames := make([]string, 0, len(theme.Variants))
-		for variantName := range theme.Variants {
-			variantNames = append(variantNames, variantName)
+	for _, name := range config.Themes.Names(filter) {
+		variant, err := config.Themes.GetVariant(name)
+		if err != nil {
+			continue
 		}
-		slices.Sort(variantNames)
-
-		for _, variantName := range variantNames {
-			variant := theme.Variants[variantName]
-			if onlyLight && !variant.Light {
-				continue
-			}
-			if onlyDark && variant.Light {
-				continue
-			}
-			if onlyFavorites && !variant.Favorite {
-				continue
-			}
-
-			variant.ThemeName = themeName
-			variant.VariantName = variantName
-			entries = append(entries, galleryEntry{
-				label:   fmt.Sprintf("%s;%s", themeName, variantName),
-				variant: variant,
-			})
-		}
+		entries = append(entries, galleryEntry{label: name, variant: variant})
 	}
 
 	return entries

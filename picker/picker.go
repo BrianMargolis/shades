@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"slices"
 	"strings"
 	"sync"
 
@@ -25,12 +24,12 @@ const (
 
 const favoriteKey = "ctrl-f"
 
+const favoriteMarker = "\x1b[33m★\x1b[0m"
+
 type PickerOpts struct {
-	SocketPath    string
-	UseTmux       bool
-	OnlyDark      bool
-	OnlyLight     bool
-	OnlyFavorites bool
+	client.Filter
+	SocketPath string
+	UseTmux    bool
 }
 
 type Picker interface {
@@ -78,7 +77,7 @@ func (p *picker) pick(
 	}
 	logger.Debugw("config", "config", config)
 
-	pickerOptions := Lines(config, opts)
+	pickerOptions := Lines(config, opts.Filter)
 	logger.Debugw("options", "options", pickerOptions)
 	if len(pickerOptions) == 0 {
 		if opts.OnlyFavorites {
@@ -189,48 +188,22 @@ func (p *picker) getCommand(opts PickerOpts) string {
 	return "fzf"
 }
 
-// Flags turns the filters back into the interactive flags that select them, so
-// the list fzf reloads matches the one it started with.
-func (opts PickerOpts) Flags() []string {
-	flags := []string{}
-	if opts.OnlyDark {
-		flags = append(flags, "--dark")
-	}
-	if opts.OnlyLight {
-		flags = append(flags, "--light")
-	}
-	if opts.OnlyFavorites {
-		flags = append(flags, "--favorites")
-	}
-	return flags
-}
-
 // Lines builds the fzf input, one "theme;variant<tab>display" line per variant,
-// with favorites starred in the terminal's yellow. It's sorted because fzf
-// reloads it after every favorite toggle, and map order would reshuffle the
-// list each time.
-func Lines(config client.ConfigModel, opts PickerOpts) []string {
+// with favorites starred in the terminal's yellow. The order has to be stable
+// because fzf reloads the list after every favorite toggle.
+func Lines(config client.ConfigModel, filter client.Filter) []string {
 	lines := []string{}
-	for themeName, theme := range config.Themes {
-		for variantName, variant := range theme.Variants {
-			if opts.OnlyLight && !variant.Light {
-				continue
-			}
-			if opts.OnlyDark && variant.Light {
-				continue
-			}
-			if opts.OnlyFavorites && !variant.Favorite {
-				continue
-			}
-
-			name := fmt.Sprintf("%s;%s", themeName, variantName)
-			marker := " "
-			if variant.Favorite {
-				marker = "\x1b[33m★\x1b[0m"
-			}
-			lines = append(lines, fmt.Sprintf("%s\t%s %s", name, marker, name))
+	for _, name := range config.Themes.Names(filter) {
+		variant, err := config.Themes.GetVariant(name)
+		if err != nil {
+			continue
 		}
+
+		marker := " "
+		if variant.Favorite {
+			marker = favoriteMarker
+		}
+		lines = append(lines, fmt.Sprintf("%s\t%s %s", name, marker, name))
 	}
-	slices.Sort(lines)
 	return lines
 }

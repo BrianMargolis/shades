@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
-	"slices"
 
 	"github.com/brianmargolis/shades/client"
 
@@ -20,43 +19,34 @@ const randomFlags = `  -d, --dark        Only dark variants
 func runRandom(ctx context.Context, config client.ConfigModel, args []string) {
 	logger := zap.S()
 
-	onlyLight := false
-	onlyDark := false
-	onlyFavorites := false
-
+	filter := client.Filter{}
 	for _, arg := range args {
 		switch arg {
 		case "-l", "--light":
-			onlyLight = true
+			filter.OnlyLight = true
 		case "-d", "--dark":
-			onlyDark = true
+			filter.OnlyDark = true
 		case "-f", "--favorites":
-			onlyFavorites = true
+			filter.OnlyFavorites = true
 		default:
 			fatalUsage("unknown flag %q for random\n\nRANDOM FLAGS\n%s", arg, randomFlags)
 		}
 	}
-	if onlyLight && onlyDark {
+	if filter.OnlyLight && filter.OnlyDark {
 		fatalUsage("cannot specify both --light and --dark")
 	}
 
-	candidates := randomCandidates(config, onlyDark, onlyLight, onlyFavorites)
-	logger.Debugw(
-		"random candidates",
-		"count", len(candidates),
-		"onlyDark", onlyDark,
-		"onlyLight", onlyLight,
-		"onlyFavorites", onlyFavorites,
-	)
+	candidates := config.Themes.Names(filter)
+	logger.Debugw("random candidates", "count", len(candidates), "filter", filter)
 
 	if len(candidates) == 0 {
 		scope := "theme variants"
-		if onlyDark {
+		if filter.OnlyDark {
 			scope = "dark theme variants"
-		} else if onlyLight {
+		} else if filter.OnlyLight {
 			scope = "light theme variants"
 		}
-		if onlyFavorites {
+		if filter.OnlyFavorites {
 			fatalUsage("no favorite %s in your config\n\nMark a variant with 'favorite: true' to add it.", scope)
 		}
 		fatalUsage("no %s in your config\n\nRun 'shades -l' to list the themes in your config.", scope)
@@ -69,33 +59,6 @@ func runRandom(ctx context.Context, config client.ConfigModel, args []string) {
 	if err := (client.ChangerClient{Theme: choice}).Start(ctx, socketPath); err != nil {
 		logger.Fatalw("failed to set theme", "theme", choice, "error", err)
 	}
-}
-
-// randomCandidates is a deliberate copy of picker.getOptions rather than a
-// shared helper, to keep this command from conflicting with the gallery
-// command, which filters the same way. Consolidating the copies is a follow-up.
-//
-// The result is sorted so the index rand.IntN produces maps to a stable
-// variant, independent of Go's randomized map iteration order.
-func randomCandidates(config client.ConfigModel, onlyDark, onlyLight, onlyFavorites bool) []string {
-	candidates := []string{}
-	for themeName, theme := range config.Themes {
-		for variantName, variant := range theme.Variants {
-			if onlyLight && !variant.Light {
-				continue
-			}
-			if onlyDark && variant.Light {
-				continue
-			}
-			if onlyFavorites && !variant.Favorite {
-				continue
-			}
-			candidates = append(candidates, fmt.Sprintf("%s;%s", themeName, variantName))
-		}
-	}
-	slices.Sort(candidates)
-
-	return candidates
 }
 
 func pickRandom(candidates []string) string {

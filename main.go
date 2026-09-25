@@ -307,7 +307,7 @@ func main() {
 			logger.Fatal(err.Error())
 		}
 	case picker.ListCommand:
-		for _, line := range picker.Lines(config, parsePickerOpts(args[1:])) {
+		for _, line := range picker.Lines(config, parsePickerOpts(args[1:]).Filter) {
 			fmt.Println(line)
 		}
 	case picker.ToggleFavoriteCommand:
