@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/brianmargolis/shades/client"
 	"github.com/brianmargolis/shades/picker"
@@ -84,25 +85,7 @@ Logs:   ~/.shades/logs`,
 		},
 		newRandomCommand(),
 		newInteractiveCommand(),
-		&cobra.Command{
-			Use:               "preview <theme;variant>",
-			Aliases:           []string{"p"},
-			Short:             "Print a theme's palette as swatches",
-			Args:              themeArg,
-			ValidArgsFunction: completeThemes,
-			RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
-				variant, err := config.Themes.GetVariant(args[0])
-				if err != nil {
-					return err
-				}
-				swatches, err := preview.NewPreviewer().Preview(variant)
-				if err != nil {
-					return err
-				}
-				fmt.Println(swatches)
-				return nil
-			}),
-		},
+		newPreviewCommand(),
 		newGalleryCommand(),
 		&cobra.Command{
 			Use:     "favorite",
@@ -211,6 +194,42 @@ func newInteractiveCommand() *cobra.Command {
 	}
 	addFilterFlags(command, &opts.Filter)
 	command.Flags().BoolVar(&opts.UseTmux, "tmux", false, "use fzf-tmux, a floating tmux window")
+	return command
+}
+
+// previewApplyDelay is how long the cursor has to rest on a theme before the
+// picker applies it. fzf kills the preview command when the cursor moves on,
+// so themes scrolled past inside this window are never set.
+const previewApplyDelay = 150 * time.Millisecond
+
+func newPreviewCommand() *cobra.Command {
+	apply := false
+	command := &cobra.Command{
+		Use:               "preview <theme;variant>",
+		Aliases:           []string{"p"},
+		Short:             "Print a theme's palette as swatches",
+		Args:              themeArg,
+		ValidArgsFunction: completeThemes,
+		RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
+			variant, err := config.Themes.GetVariant(args[0])
+			if err != nil {
+				return err
+			}
+			swatches, err := preview.NewPreviewer().Preview(variant)
+			if err != nil {
+				return err
+			}
+			fmt.Println(swatches)
+
+			if !apply {
+				return nil
+			}
+			time.Sleep(previewApplyDelay)
+			return client.ChangerClient{Theme: args[0]}.Start(cmd.Context(), socketPath)
+		}),
+	}
+	command.Flags().BoolVar(&apply, "apply", false, "also switch to the theme after a short delay, for the picker")
+	command.Flags().MarkHidden("apply")
 	return command
 }
 

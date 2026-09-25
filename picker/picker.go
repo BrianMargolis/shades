@@ -127,16 +127,16 @@ func (p *picker) pick(
 		"--header=" + favoriteKey + ": toggle favorite",
 		// save an enter once we've narrowed it down to one
 		"--bind=one:accept",
-		// live preview. execute would switch to the alternate screen on every
-		// focus change, flashing the whole picker once per keypress.
-		"--bind=focus:execute-silent(shades set {1})",
 		fmt.Sprintf(
 			"--bind=%s:execute-silent(shades %s {1})+reload(shades %s)",
 			favoriteKey,
 			ToggleFavoriteCommand,
 			strings.Join(append([]string{ListCommand}, opts.Flags()...), " "),
 		),
-		"--preview=shades preview {1}",
+		// The preview also applies the theme, after a delay. fzf kills a running
+		// preview when the cursor moves, so scrolling quickly doesn't pile up a
+		// theme change for every line passed over.
+		"--preview=shades preview --apply {1}",
 		"--no-scrollbar",
 		"--preview-window",
 		// The preview is one swatch line per distinct palette color, so sizing
