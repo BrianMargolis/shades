@@ -44,6 +44,7 @@ every palette at once:
 
 ```sh
 shades set 'everforest;dark-medium'
+shades current                          # the theme that's set now
 shades random                           # a random theme, printed as it's applied
 shades random --dark                    # only dark variants (--light for light)
 shades random --favorites               # only variants marked favorite: true

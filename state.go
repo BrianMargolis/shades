@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/brianmargolis/shades/client"
 
@@ -25,6 +26,36 @@ func currentVariant(config client.ConfigModel) (string, client.ThemeVariant, err
 	}
 
 	return current, variant, nil
+}
+
+// runCurrent prints the theme the server holds, noting whether it's a
+// favorite or one of the defaults.
+func runCurrent(config client.ConfigModel) error {
+	current, variant, err := currentVariant(config)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(describeTheme(config, current, variant))
+	return nil
+}
+
+func describeTheme(config client.ConfigModel, name string, variant client.ThemeVariant) string {
+	notes := []string{}
+	if variant.Favorite {
+		notes = append(notes, "favorite")
+	}
+	if name == config.DefaultDarkTheme {
+		notes = append(notes, "default dark")
+	}
+	if name == config.DefaultLightTheme {
+		notes = append(notes, "default light")
+	}
+
+	if len(notes) == 0 {
+		return name
+	}
+	return fmt.Sprintf("%s (%s)", name, strings.Join(notes, ", "))
 }
 
 // runFavorite marks or unmarks the current theme as a favorite.

@@ -65,6 +65,14 @@ Logs:   ~/.shades/logs`,
 			RunE:    withConfig(runToggle),
 		},
 		&cobra.Command{
+			Use:   "current",
+			Short: "Print the current theme, and whether it's a favorite or a default",
+			Args:  cobra.NoArgs,
+			RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
+				return runCurrent(config)
+			}),
+		},
+		&cobra.Command{
 			Use:   "set <theme;variant>",
 			Short: "Switch to a specific theme",
 			Args:  themeArg,
