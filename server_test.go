@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/brianmargolis/shades/client"
 )
 
 // startTestServer serves on a fresh socket and returns a function that dials
@@ -22,14 +24,7 @@ func startTestServer(t *testing.T, s *server) func() net.Conn {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { os.RemoveAll(directory) })
-
-	config := "themes:\n  everforest:\n    variants:\n      dark-medium:\n        light: false\n      light-medium:\n        light: true\n"
-	configPath := filepath.Join(directory, "shades.yaml")
-	if err := os.WriteFile(configPath, []byte(config), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("SHADES_CONFIG", configPath)
-	t.Setenv("SHADES_STATE", filepath.Join(directory, "state.yaml"))
+	useTestConfig(t, directory)
 
 	socketPath := filepath.Join(directory, "s.sock")
 	listener, err := net.Listen("unix", socketPath)
@@ -48,6 +43,20 @@ func startTestServer(t *testing.T, s *server) func() net.Conn {
 		t.Cleanup(func() { conn.Close() })
 		return conn
 	}
+}
+
+// useTestConfig points the config and state at directory, with a config that
+// has one theme in two variants.
+func useTestConfig(t *testing.T, directory string) {
+	t.Helper()
+
+	config := "themes:\n  everforest:\n    variants:\n      dark-medium:\n        light: false\n      light-medium:\n        light: true\n"
+	configPath := filepath.Join(directory, "shades.yaml")
+	if err := os.WriteFile(configPath, []byte(config), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("SHADES_CONFIG", configPath)
+	t.Setenv("SHADES_STATE", filepath.Join(directory, "state.yaml"))
 }
 
 func send(t *testing.T, conn net.Conn, message string) {
@@ -110,6 +119,37 @@ func TestServerRefusesThemesNotInTheConfig(t *testing.T) {
 	getterReader := bufio.NewReader(getter)
 	send(t, getter, "get:\n")
 	expectLine(t, getterReader, getter, "set:everforest;light-medium\n")
+}
+
+func TestServerRestoresTheThemeAfterARestart(t *testing.T) {
+	dial := startTestServer(t, &server{maxConnections: 10})
+
+	conn := dial()
+	reader := bufio.NewReader(conn)
+	// the theme is saved before it's broadcast, so seeing the set means it's
+	// on disk
+	send(t, conn, "subscribe:test\npropose:everforest;light-medium\n")
+	expectLine(t, reader, conn, "set:everforest;light-medium\n")
+
+	restarted := &server{maxConnections: 10}
+	restarted.restoreCurrentTheme()
+	theme := restarted.currentTheme.Load()
+	if theme == nil || *theme != "everforest;light-medium" {
+		t.Fatalf("restored theme = %v, want everforest;light-medium", theme)
+	}
+}
+
+func TestServerSkipsASavedThemeNoLongerInTheConfig(t *testing.T) {
+	useTestConfig(t, t.TempDir())
+	if err := client.SaveCurrentTheme("gruvbox;dark"); err != nil {
+		t.Fatal(err)
+	}
+
+	restarted := &server{maxConnections: 10}
+	restarted.restoreCurrentTheme()
+	if theme := restarted.currentTheme.Load(); theme != nil {
+		t.Fatalf("restored theme = %q, want none", *theme)
+	}
 }
 
 func TestServerRefusesConnectionsOverTheLimit(t *testing.T) {

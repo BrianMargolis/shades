@@ -57,7 +57,33 @@ func (s *server) Start(socketPath string) error {
 	defer os.Remove(socketPath)
 	planForDeath(socket)
 
+	s.restoreCurrentTheme()
 	return s.serve(socket)
+}
+
+// restoreCurrentTheme picks up the theme from before the server last stopped,
+// so a restart (a crash, a reboot, a reinstall) doesn't fall back to the
+// default for the current appearance.
+func (s *server) restoreCurrentTheme() {
+	logger := zap.S()
+
+	theme, err := client.GetCurrentTheme()
+	if err != nil {
+		logger.Warnw("could not read the saved theme", "error", err)
+		return
+	}
+	if theme == "" {
+		return
+	}
+
+	// the config may have dropped the theme while the server was down
+	if _, err := paletteMessage(theme); err != nil {
+		logger.Warnw("not restoring a saved theme that isn't in the config", "theme", theme, "error", err)
+		return
+	}
+
+	logger.Infow("restored the saved theme", "theme", theme)
+	s.currentTheme.Store(&theme)
 }
 
 // serve accepts connections until the listener is closed. Nothing a single
@@ -142,6 +168,9 @@ func (s *server) talkToClient(
 				continue
 			}
 			s.currentTheme.Store(&proposedTheme)
+			if err := client.SaveCurrentTheme(proposedTheme); err != nil {
+				logger.Warnw("could not save the current theme", "theme", proposedTheme, "error", err)
+			}
 			broadcast(mutex, clients, append(palette, protocol.Set(proposedTheme)...))
 		case "get":
 			theme := s.currentTheme.Load()

@@ -3,6 +3,7 @@ package client
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -40,41 +41,74 @@ func GetState() (State, error) {
 	return state, nil
 }
 
-// SaveState writes through a temp file in the same directory and renames it
-// into place, so a crash mid-write can't leave a truncated state file that
-// would then break every GetConfig.
 func SaveState(state State) error {
 	path := GetStatePath()
-	logger := zap.S().With("path", path)
 
 	contents, err := yaml.Marshal(state)
 	if err != nil {
 		return errors.Wrap(err, "encode state")
 	}
-
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return errors.Wrapf(err, "create state dir %s", dir)
+	if err := writeFileAtomically(path, contents); err != nil {
+		return err
 	}
 
-	temp, err := os.CreateTemp(dir, ".state-*.yaml")
+	zap.S().Debugw("saved state", "path", path, "state", state)
+	return nil
+}
+
+// GetCurrentTheme reads the theme the server last set, or "" if it hasn't set
+// one yet.
+func GetCurrentTheme() (string, error) {
+	path := GetCurrentThemePath()
+
+	contents, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return "", nil
+	}
 	if err != nil {
-		return errors.Wrap(err, "create temp state file")
+		return "", errors.Wrapf(err, "read current theme file %s", path)
+	}
+
+	return strings.TrimSpace(string(contents)), nil
+}
+
+// SaveCurrentTheme records the theme the server just set, so a restarted
+// server can pick up where it left off. It lives apart from the state file
+// because the server writes it on every change, and sharing a file with the
+// CLI's own read-modify-write of favorites would let one clobber the other.
+func SaveCurrentTheme(theme string) error {
+	return writeFileAtomically(GetCurrentThemePath(), []byte(theme+"\n"))
+}
+
+func GetCurrentThemePath() string {
+	return filepath.Join(filepath.Dir(GetStatePath()), "current-theme")
+}
+
+// writeFileAtomically writes through a temp file in the same directory and
+// renames it into place, so a crash mid-write can't leave a truncated file
+// behind (a truncated state file would break every GetConfig).
+func writeFileAtomically(path string, contents []byte) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return errors.Wrapf(err, "create dir %s", dir)
+	}
+
+	temp, err := os.CreateTemp(dir, "."+filepath.Base(path)+"-*")
+	if err != nil {
+		return errors.Wrapf(err, "create temp file for %s", path)
 	}
 	defer os.Remove(temp.Name())
 
 	if _, err := temp.Write(contents); err != nil {
 		temp.Close()
-		return errors.Wrap(err, "write temp state file")
+		return errors.Wrapf(err, "write temp file for %s", path)
 	}
 	if err := temp.Close(); err != nil {
-		return errors.Wrap(err, "close temp state file")
+		return errors.Wrapf(err, "close temp file for %s", path)
 	}
 	if err := os.Rename(temp.Name(), path); err != nil {
-		return errors.Wrapf(err, "replace state file %s", path)
+		return errors.Wrapf(err, "replace %s", path)
 	}
-
-	logger.Debugw("saved state", "state", state)
 	return nil
 }
 

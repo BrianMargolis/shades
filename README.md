@@ -204,6 +204,9 @@ there wins over the config's, and a favorite there wins in either direction, so
 to the machine, so copy anything you want to keep everywhere into
 `shades.yaml`.
 
+The server also saves the theme it last set to `current-theme`, next to the
+state file, and picks it back up when it restarts.
+
 Anything without a dedicated client can usually be handled by the `template`
 client, which renders a file per entry in `templates`. Placeholders are color
 names wrapped in `escape-char` on both sides, so with `escape-char: "%"`,
