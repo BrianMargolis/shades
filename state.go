@@ -44,19 +44,35 @@ func saveState(state client.State) {
 // runFavorite marks or unmarks the current theme as a favorite.
 func runFavorite(config client.ConfigModel, favorite bool) {
 	current, _ := currentVariant(config)
+	setFavorite(current, favorite)
+}
 
+// runToggleFavorite flips a named theme's favorite, for the picker's keybind.
+// It takes the theme from fzf rather than asking the server, because the
+// server only hears about the focused theme through an async set that may not
+// have landed yet.
+func runToggleFavorite(config client.ConfigModel, theme string) {
+	variant, err := config.Themes.GetVariant(theme)
+	if err != nil {
+		fatal(fmt.Sprintf("%q isn't in your config", theme), err)
+	}
+
+	setFavorite(theme, !variant.Favorite)
+}
+
+func setFavorite(theme string, favorite bool) {
 	state := loadState()
 	if state.Favorites == nil {
 		state.Favorites = map[string]bool{}
 	}
-	state.Favorites[current] = favorite
+	state.Favorites[theme] = favorite
 	saveState(state)
 
-	zap.S().Debugw("set favorite", "theme", current, "favorite", favorite)
+	zap.S().Debugw("set favorite", "theme", theme, "favorite", favorite)
 	if favorite {
-		fmt.Printf("%s is now a favorite\n", current)
+		fmt.Printf("%s is now a favorite\n", theme)
 	} else {
-		fmt.Printf("%s is no longer a favorite\n", current)
+		fmt.Printf("%s is no longer a favorite\n", theme)
 	}
 }
 

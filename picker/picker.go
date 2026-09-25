@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 	"sync"
 
@@ -14,6 +15,15 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
+
+// The picker shells back out to shades for these, so they're commands, but
+// they're internal to fzf's bindings and left out of the help.
+const (
+	ListCommand           = "_picker-list"
+	ToggleFavoriteCommand = "_toggle-favorite"
+)
+
+const favoriteKey = "ctrl-f"
 
 type PickerOpts struct {
 	SocketPath    string
@@ -68,11 +78,11 @@ func (p *picker) pick(
 	}
 	logger.Debugw("config", "config", config)
 
-	pickerOptions := p.getOptions(config, opts)
+	pickerOptions := Lines(config, opts)
 	logger.Debugw("options", "options", pickerOptions)
 	if len(pickerOptions) == 0 {
 		if opts.OnlyFavorites {
-			err = errors.New("no favorite theme variants match; mark a variant with 'favorite: true' to add it")
+			err = errors.New("no favorite theme variants match; mark one with " + favoriteKey + " in 'shades i', or 'favorite: true' in your config")
 		} else {
 			err = errors.New("no theme variants match")
 		}
@@ -90,12 +100,28 @@ func (p *picker) pick(
 		// A bare number is a line count to fzf, not a percentage, so the
 		// percent sign is what makes the picker fill the terminal.
 		"--height=100%",
+		// Each line is "theme;variant<tab>display". fzf shows and searches the
+		// display, while the actions and the final output use the bare name.
+		"--ansi",
+		"--delimiter=\t",
+		"--with-nth=2",
+		"--accept-nth=1",
+		// keep the cursor on the same theme when a favorite toggle reloads the list
+		"--track",
+		"--id-nth=1",
+		"--header=" + favoriteKey + ": toggle favorite",
 		// save an enter once we've narrowed it down to one
 		"--bind=one:accept",
 		// live preview. execute would switch to the alternate screen on every
 		// focus change, flashing the whole picker once per keypress.
-		"--bind=focus:execute-silent(shades set {})",
-		"--preview=shades preview {}",
+		"--bind=focus:execute-silent(shades set {1})",
+		fmt.Sprintf(
+			"--bind=%s:execute-silent(shades %s {1})+reload(shades %s)",
+			favoriteKey,
+			ToggleFavoriteCommand,
+			strings.Join(append([]string{ListCommand}, opts.Flags()...), " "),
+		),
+		"--preview=shades preview {1}",
 		"--no-scrollbar",
 		"--preview-window",
 		// The preview is one swatch line per distinct palette color, so sizing
@@ -163,8 +189,28 @@ func (p *picker) getCommand(opts PickerOpts) string {
 	return "fzf"
 }
 
-func (*picker) getOptions(config client.ConfigModel, opts PickerOpts) []string {
-	pickerOptions := []string{}
+// Flags turns the filters back into the interactive flags that select them, so
+// the list fzf reloads matches the one it started with.
+func (opts PickerOpts) Flags() []string {
+	flags := []string{}
+	if opts.OnlyDark {
+		flags = append(flags, "--dark")
+	}
+	if opts.OnlyLight {
+		flags = append(flags, "--light")
+	}
+	if opts.OnlyFavorites {
+		flags = append(flags, "--favorites")
+	}
+	return flags
+}
+
+// Lines builds the fzf input, one "theme;variant<tab>display" line per variant,
+// with favorites starred in the terminal's yellow. It's sorted because fzf
+// reloads it after every favorite toggle, and map order would reshuffle the
+// list each time.
+func Lines(config client.ConfigModel, opts PickerOpts) []string {
+	lines := []string{}
 	for themeName, theme := range config.Themes {
 		for variantName, variant := range theme.Variants {
 			if opts.OnlyLight && !variant.Light {
@@ -176,8 +222,15 @@ func (*picker) getOptions(config client.ConfigModel, opts PickerOpts) []string {
 			if opts.OnlyFavorites && !variant.Favorite {
 				continue
 			}
-			pickerOptions = append(pickerOptions, fmt.Sprintf("%s;%s", themeName, variantName))
+
+			name := fmt.Sprintf("%s;%s", themeName, variantName)
+			marker := " "
+			if variant.Favorite {
+				marker = "\x1b[33m★\x1b[0m"
+			}
+			lines = append(lines, fmt.Sprintf("%s\t%s %s", name, marker, name))
 		}
 	}
-	return pickerOptions
+	slices.Sort(lines)
+	return lines
 }

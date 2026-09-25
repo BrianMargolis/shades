@@ -63,6 +63,9 @@ shades i --favorites      # only variants marked favorite: true
 shades i --tmux           # use fzf-tmux, i.e. a floating tmux window
 ```
 
+Favorites are starred in the list, and `ctrl-f` toggles the focused theme's
+favorite in place.
+
 Once you've landed on a theme you like, you can keep it around without opening
 your config:
 

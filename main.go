@@ -194,6 +194,7 @@ var commands = []string{
 	"gallery", "random",
 	"favorite", "fav", "unfavorite", "unfav", "default", "state",
 	"install", "uninstall",
+	picker.ListCommand, picker.ToggleFavoriteCommand,
 }
 
 func main() {
@@ -301,39 +302,19 @@ func main() {
 	case "random":
 		runRandom(ctx, config, args[1:])
 	case "i", "interactive":
-		useTmux := false
-		onlyLight := false
-		onlyDark := false
-		onlyFavorites := false
-
-		for i := 1; i < len(args); i++ {
-			switch args[i] {
-			case "--tmux":
-				useTmux = true
-			case "-l", "--light":
-				onlyLight = true
-			case "-d", "--dark":
-				onlyDark = true
-			case "-f", "--favorites":
-				onlyFavorites = true
-			default:
-				fatalUsage("unknown flag %q for interactive\n\nINTERACTIVE FLAGS\n%s", args[i], interactiveFlags)
-			}
-		}
-		if onlyLight && onlyDark {
-			fatalUsage("cannot specify both --light and --dark")
-		}
-
-		_, err := picker.NewPicker().Start(picker.PickerOpts{
-			SocketPath:    socketPath,
-			UseTmux:       useTmux,
-			OnlyDark:      onlyDark,
-			OnlyLight:     onlyLight,
-			OnlyFavorites: onlyFavorites,
-		})
+		_, err := picker.NewPicker().Start(parsePickerOpts(args[1:]))
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
+	case picker.ListCommand:
+		for _, line := range picker.Lines(config, parsePickerOpts(args[1:])) {
+			fmt.Println(line)
+		}
+	case picker.ToggleFavoriteCommand:
+		if len(args) < 2 {
+			fatalUsage("%s needs a <theme;variant> argument", picker.ToggleFavoriteCommand)
+		}
+		runToggleFavorite(config, args[1])
 	case "p", "preview":
 		if len(args) < 2 {
 			fatalUsage("preview needs a <theme;variant> argument\n\nRun 'shades -l' to list the themes in your config.")
@@ -358,6 +339,29 @@ func main() {
 	case "state":
 		runState()
 	}
+}
+
+func parsePickerOpts(args []string) picker.PickerOpts {
+	opts := picker.PickerOpts{SocketPath: socketPath}
+	for _, arg := range args {
+		switch arg {
+		case "--tmux":
+			opts.UseTmux = true
+		case "-l", "--light":
+			opts.OnlyLight = true
+		case "-d", "--dark":
+			opts.OnlyDark = true
+		case "-f", "--favorites":
+			opts.OnlyFavorites = true
+		default:
+			fatalUsage("unknown flag %q for interactive\n\nINTERACTIVE FLAGS\n%s", arg, interactiveFlags)
+		}
+	}
+	if opts.OnlyLight && opts.OnlyDark {
+		fatalUsage("cannot specify both --light and --dark")
+	}
+
+	return opts
 }
 
 func shadesLogDir() (string, error) {
