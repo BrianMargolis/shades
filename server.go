@@ -134,8 +134,15 @@ func (s *server) talkToClient(
 			// supplies the delimiter, so keeping this one would end every broadcast
 			// with a blank line.
 			proposedTheme := strings.TrimSpace(noun)
+			// a theme missing from the config has no palette to give clients, so
+			// it goes no further than the log
+			palette, err := paletteMessage(proposedTheme)
+			if err != nil {
+				logger.Warnw("refusing a theme that isn't in the config", "theme", proposedTheme, "error", err)
+				continue
+			}
 			s.currentTheme.Store(&proposedTheme)
-			broadcast(mutex, clients, themeMessage(proposedTheme))
+			broadcast(mutex, clients, append(palette, protocol.Set(proposedTheme)...))
 		case "get":
 			theme := s.currentTheme.Load()
 			if theme == nil {

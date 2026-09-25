@@ -48,7 +48,7 @@ Logs:   ~/.shades/logs`,
 			Short:   "Switch to the default dark theme",
 			Args:    cobra.NoArgs,
 			RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
-				return client.ChangerClient{Theme: config.DefaultDarkTheme}.Start(cmd.Context(), config.GetSocketPath())
+				return setTheme(cmd, config, config.DefaultDarkTheme)
 			}),
 		},
 		&cobra.Command{
@@ -57,7 +57,7 @@ Logs:   ~/.shades/logs`,
 			Short:   "Switch to the default light theme",
 			Args:    cobra.NoArgs,
 			RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
-				return client.ChangerClient{Theme: config.DefaultLightTheme}.Start(cmd.Context(), config.GetSocketPath())
+				return setTheme(cmd, config, config.DefaultLightTheme)
 			}),
 		},
 		&cobra.Command{
@@ -81,7 +81,7 @@ Logs:   ~/.shades/logs`,
 			Args:              themeArg,
 			ValidArgsFunction: completeThemes,
 			RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
-				return client.ChangerClient{Theme: args[0]}.Start(cmd.Context(), config.GetSocketPath())
+				return setTheme(cmd, config, args[0])
 			}),
 		},
 		newRandomCommand(),
@@ -362,6 +362,15 @@ func themeArg(cmd *cobra.Command, args []string) error {
 		)
 	}
 	return nil
+}
+
+// setTheme checks the name before sending it. The server refuses an unknown
+// theme too, but it has no way to tell the command that it did.
+func setTheme(cmd *cobra.Command, config client.ConfigModel, theme string) error {
+	if _, err := config.Themes.GetVariant(theme); err != nil {
+		return errors.Wrapf(err, "%q isn't in your config; run 'shades list' to see the themes in it", theme)
+	}
+	return client.ChangerClient{Theme: theme}.Start(cmd.Context(), config.GetSocketPath())
 }
 
 func runToggle(cmd *cobra.Command, config client.ConfigModel, args []string) error {

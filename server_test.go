@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -16,14 +17,19 @@ import (
 func startTestServer(t *testing.T, s *server) func() net.Conn {
 	t.Helper()
 
-	// no config, so the server sends set lines without a palette ahead of them
-	t.Setenv("SHADES_CONFIG", filepath.Join(t.TempDir(), "missing.yaml"))
-
 	directory, err := os.MkdirTemp("", "shades")
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { os.RemoveAll(directory) })
+
+	config := "themes:\n  everforest:\n    variants:\n      dark-medium:\n        light: false\n      light-medium:\n        light: true\n"
+	configPath := filepath.Join(directory, "shades.yaml")
+	if err := os.WriteFile(configPath, []byte(config), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("SHADES_CONFIG", configPath)
+	t.Setenv("SHADES_STATE", filepath.Join(directory, "state.yaml"))
 
 	socketPath := filepath.Join(directory, "s.sock")
 	listener, err := net.Listen("unix", socketPath)
@@ -51,15 +57,23 @@ func send(t *testing.T, conn net.Conn, message string) {
 	}
 }
 
+// expectLine waits for the next line that isn't a palette, since every set is
+// preceded by one.
 func expectLine(t *testing.T, reader *bufio.Reader, conn net.Conn, want string) {
 	t.Helper()
 	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
-	got, err := reader.ReadString('\n')
-	if err != nil {
-		t.Fatalf("waiting for %q: %v", want, err)
-	}
-	if got != want {
-		t.Fatalf("got %q, want %q", got, want)
+	for {
+		got, err := reader.ReadString('\n')
+		if err != nil {
+			t.Fatalf("waiting for %q: %v", want, err)
+		}
+		if strings.HasPrefix(got, "palette:") {
+			continue
+		}
+		if got != want {
+			t.Fatalf("got %q, want %q", got, want)
+		}
+		return
 	}
 }
 
@@ -76,6 +90,26 @@ func TestServerSurvivesMalformedMessages(t *testing.T) {
 	proposer := dial()
 	send(t, proposer, "propose\n\npropose:everforest;light-medium\n")
 	expectLine(t, subscriberReader, subscriber, "set:everforest;light-medium\n")
+}
+
+func TestServerRefusesThemesNotInTheConfig(t *testing.T) {
+	dial := startTestServer(t, &server{maxConnections: 10})
+
+	subscriber := dial()
+	subscriberReader := bufio.NewReader(subscriber)
+	send(t, subscriber, "subscribe:test\npropose:everforest;dark-medium\n")
+	expectLine(t, subscriberReader, subscriber, "set:everforest;dark-medium\n")
+
+	// the typo is dropped, so the next line the subscriber sees is the valid
+	// proposal after it
+	proposer := dial()
+	send(t, proposer, "propose:everforst;dark-medium\npropose:everforest;light-medium\n")
+	expectLine(t, subscriberReader, subscriber, "set:everforest;light-medium\n")
+
+	getter := dial()
+	getterReader := bufio.NewReader(getter)
+	send(t, getter, "get:\n")
+	expectLine(t, getterReader, getter, "set:everforest;light-medium\n")
 }
 
 func TestServerRefusesConnectionsOverTheLimit(t *testing.T) {
