@@ -134,6 +134,18 @@ restart if they crash. It's macOS-only at the moment. Logs land in
 The agents run the installed binary with its command line baked into their
 plists, so after upgrading `shades`, run `just install` again to rewrite them.
 
+### Shell completion
+
+`shades completion fish` (or `zsh`, `bash`) prints a completion script that
+completes commands, flags, client names, and theme names. For fish, save it
+where fish autoloads completions:
+
+```sh
+shades completion fish > ~/.config/fish/completions/shades.fish
+```
+
+Theme names complete with the `;` escaped, so the shell doesn't split them.
+
 ## Configuration
 
 `shades` is configured with a yaml file - an example can be found in this repo

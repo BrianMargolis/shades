@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/brianmargolis/shades/client"
 	"github.com/brianmargolis/shades/picker"
@@ -73,9 +74,10 @@ Logs:   ~/.shades/logs`,
 			}),
 		},
 		&cobra.Command{
-			Use:   "set <theme;variant>",
-			Short: "Switch to a specific theme",
-			Args:  themeArg,
+			Use:               "set <theme;variant>",
+			Short:             "Switch to a specific theme",
+			Args:              themeArg,
+			ValidArgsFunction: completeThemes,
 			RunE: func(cmd *cobra.Command, args []string) error {
 				return client.ChangerClient{Theme: args[0]}.Start(cmd.Context(), socketPath)
 			},
@@ -83,10 +85,11 @@ Logs:   ~/.shades/logs`,
 		newRandomCommand(),
 		newInteractiveCommand(),
 		&cobra.Command{
-			Use:     "preview <theme;variant>",
-			Aliases: []string{"p"},
-			Short:   "Print a theme's palette as swatches",
-			Args:    themeArg,
+			Use:               "preview <theme;variant>",
+			Aliases:           []string{"p"},
+			Short:             "Print a theme's palette as swatches",
+			Args:              themeArg,
+			ValidArgsFunction: completeThemes,
 			RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
 				variant, err := config.Themes.GetVariant(args[0])
 				if err != nil {
@@ -163,14 +166,16 @@ Logs:   ~/.shades/logs`,
 		},
 		newPickerListCommand(),
 		&cobra.Command{
-			Use:    picker.ToggleFavoriteCommand + " <theme;variant>",
-			Hidden: true,
-			Args:   themeArg,
+			Use:               picker.ToggleFavoriteCommand + " <theme;variant>",
+			Hidden:            true,
+			Args:              themeArg,
+			ValidArgsFunction: completeThemes,
 			RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
 				return runToggleFavorite(config, args[0])
 			}),
 		},
 	)
+	patchFishCompletion(root)
 
 	return root
 }
@@ -255,7 +260,15 @@ func newClientsCommand() *cobra.Command {
 			}
 			return nil
 		},
-		ValidArgs: clientNames(),
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			remaining := []string{}
+			for _, name := range clientNames() {
+				if !slices.Contains(args, name) {
+					remaining = append(remaining, name)
+				}
+			}
+			return remaining, cobra.ShellCompDirectiveNoFileComp
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runClients(args)
 		},
