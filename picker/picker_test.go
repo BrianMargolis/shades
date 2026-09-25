@@ -68,7 +68,7 @@ func TestPickExitStatus(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			fakeFzf(t, "gruvbox;dark\n", test.status)
 
-			result, err := (&picker{}).pick(zap.S(), PickerOpts{})
+			result, err := (&picker{}).pick(zap.S(), PickerOpts{}, "gruvbox;dark")
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("pick() error = %v, want %v", err, test.wantErr)
 			}
@@ -82,9 +82,35 @@ func TestPickExitStatus(t *testing.T) {
 func TestPickFailure(t *testing.T) {
 	fakeFzf(t, "", 2)
 
-	_, err := (&picker{}).pick(zap.S(), PickerOpts{})
+	_, err := (&picker{}).pick(zap.S(), PickerOpts{}, "")
 	if err == nil || errors.Is(err, ErrCancelled) {
 		t.Fatalf("pick() error = %v, want a failure that isn't a cancel", err)
+	}
+}
+
+func TestLinePosition(t *testing.T) {
+	lines := Lines(testConfig(), client.Filter{})
+
+	tests := []struct {
+		name         string
+		theme        string
+		wantPosition int
+		wantOK       bool
+	}{
+		{name: "first line is position 1", theme: "everforest;dark-medium", wantPosition: 1, wantOK: true},
+		{name: "last line", theme: "gruvbox;dark", wantPosition: 3, wantOK: true},
+		{name: "a prefix of a name doesn't match", theme: "everforest;dark", wantOK: false},
+		{name: "a theme filtered out of the list", theme: "nord;dark", wantOK: false},
+		{name: "no current theme", theme: "", wantOK: false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			position, ok := linePosition(lines, test.theme)
+			if position != test.wantPosition || ok != test.wantOK {
+				t.Errorf("linePosition() = %d, %v, want %d, %v", position, ok, test.wantPosition, test.wantOK)
+			}
+		})
 	}
 }
 

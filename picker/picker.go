@@ -56,7 +56,7 @@ func (p *picker) Start(opts PickerOpts) (result string, err error) {
 		logger.Warnw("could not get the current theme, so cancelling won't restore it", "error", err)
 	}
 
-	result, err = p.pick(logger, opts)
+	result, err = p.pick(logger, opts, original)
 	if errors.Is(err, ErrCancelled) {
 		logger.Debugw("picker cancelled, restoring the original theme", "theme", original)
 		if original != "" {
@@ -83,6 +83,7 @@ func (p *picker) Start(opts PickerOpts) (result string, err error) {
 func (p *picker) pick(
 	logger *zap.SugaredLogger,
 	opts PickerOpts,
+	current string,
 ) (result string, err error) {
 
 	config, err := client.GetConfig()
@@ -146,6 +147,16 @@ func (p *picker) pick(
 		"--cycle",
 	}
 
+	if position, ok := linePosition(pickerOptions, current); ok {
+		fzfOptions = append(fzfOptions,
+			// --sync holds the window back until the jump is done, so it never
+			// shows the cursor at the top first. Unbinding keeps later reloads
+			// from jumping back, and leaves the cursor to --track.
+			"--sync",
+			fmt.Sprintf("--bind=load:pos(%d)+unbind(load)", position),
+		)
+	}
+
 	if opts.UseTmux {
 		// floating window. fzf-tmux appends --no-height after our arguments, so
 		// --height above does nothing here and the popup geometry is the only
@@ -177,6 +188,20 @@ func (p *picker) pick(
 	}
 
 	return strings.TrimSpace(output.String()), nil
+}
+
+// linePosition finds a theme's 1-based position in the fzf input, which is
+// what fzf's pos action takes.
+func linePosition(lines []string, theme string) (int, bool) {
+	if theme == "" {
+		return 0, false
+	}
+	for index, line := range lines {
+		if strings.HasPrefix(line, theme+"\t") {
+			return index + 1, true
+		}
+	}
+	return 0, false
 }
 
 func (p *picker) getCommand(opts PickerOpts) string {
