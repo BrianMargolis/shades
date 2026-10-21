@@ -158,6 +158,15 @@ func TestLines(t *testing.T) {
 				"gruvbox;dark\t  gruvbox;dark",
 			},
 		},
+		{
+			name:  "coolest background first",
+			order: OrderCoolFirst,
+			want: []string{
+				"everforest;dark-medium\t" + favoriteMarker + " everforest;dark-medium",
+				"gruvbox;dark\t  gruvbox;dark",
+				"everforest;light-soft\t  everforest;light-soft",
+			},
+		},
 	}
 
 	for _, test := range tests {

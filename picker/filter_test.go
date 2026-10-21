@@ -85,8 +85,14 @@ func TestFilterTransform(t *testing.T) {
 			want:   "unbind(one)+change-prompt(light→dark > )+reload(shades _picker-list --order light-first)",
 		},
 		{
-			name:   "order goes from light first back to name",
+			name:   "order goes from light first to cool first",
 			prompt: "★ light→dark > ",
+			action: FilterOrder,
+			want:   "unbind(one)+change-prompt(★ cool→warm > )+reload(shades _picker-list --favorites --order cool-first)",
+		},
+		{
+			name:   "order goes from cool first back to name",
+			prompt: "★ cool→warm > ",
 			action: FilterOrder,
 			want:   "unbind(one)+change-prompt(★ > )+reload(shades _picker-list --favorites)",
 		},

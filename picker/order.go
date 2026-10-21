@@ -17,9 +17,10 @@ const (
 	OrderName       Order = "name"
 	OrderDarkFirst  Order = "dark-first"
 	OrderLightFirst Order = "light-first"
+	OrderCoolFirst  Order = "cool-first"
 )
 
-var Orders = []Order{OrderName, OrderDarkFirst, OrderLightFirst}
+var Orders = []Order{OrderName, OrderDarkFirst, OrderLightFirst, OrderCoolFirst}
 
 func (o *Order) String() string {
 	if *o == "" {
@@ -63,8 +64,9 @@ func (o Order) Flags() []string {
 	return []string{"--order", string(o)}
 }
 
-// sortVariants orders variants by how light their background is. Variants come
-// in sorted by name, and the sort is stable, so ties stay in name order.
+// sortVariants orders variants by how light or how warm their background is.
+// Variants come in sorted by name, and the sort is stable, so ties stay in name
+// order.
 func sortVariants(variants []client.ThemeVariant, order Order) {
 	byLuminance := func(a, b client.ThemeVariant) int {
 		return cmp.Compare(a.Luminance(), b.Luminance())
@@ -75,6 +77,10 @@ func sortVariants(variants []client.ThemeVariant, order Order) {
 	case OrderLightFirst:
 		slices.SortStableFunc(variants, func(a, b client.ThemeVariant) int {
 			return byLuminance(b, a)
+		})
+	case OrderCoolFirst:
+		slices.SortStableFunc(variants, func(a, b client.ThemeVariant) int {
+			return cmp.Compare(a.Warmth(), b.Warmth())
 		})
 	}
 }

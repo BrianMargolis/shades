@@ -46,6 +46,7 @@ const (
 	promptFavorites  = "★"
 	promptDarkFirst  = "dark→light"
 	promptLightFirst = "light→dark"
+	promptCoolFirst  = "cool→warm"
 	promptEnd        = "> "
 )
 
@@ -65,6 +66,8 @@ func prompt(filter client.Filter, order Order) string {
 		words = append(words, promptDarkFirst)
 	case OrderLightFirst:
 		words = append(words, promptLightFirst)
+	case OrderCoolFirst:
+		words = append(words, promptCoolFirst)
 	}
 	return strings.Join(append(words, promptEnd), " ")
 }
@@ -84,6 +87,8 @@ func parsePrompt(prompt string) (client.Filter, Order) {
 			order = OrderDarkFirst
 		case promptLightFirst:
 			order = OrderLightFirst
+		case promptCoolFirst:
+			order = OrderCoolFirst
 		}
 	}
 	return filter, order

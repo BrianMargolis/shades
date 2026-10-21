@@ -334,7 +334,7 @@ func newPickerListCommand() *cobra.Command {
 }
 
 func addOrderFlag(command *cobra.Command, order *picker.Order) {
-	command.Flags().Var(order, "order", "sort the list by name, or by background: dark-first or light-first")
+	command.Flags().Var(order, "order", "sort the list by name, or by background: dark-first, light-first, or cool-first")
 	command.RegisterFlagCompletionFunc("order", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		orders := []string{}
 		for _, order := range picker.Orders {
