@@ -29,7 +29,7 @@ func (p *previewer) Preview(theme client.ThemeVariant) (string, error) {
 		if _, ok := hexCodesSeen[hexCode]; ok {
 			continue
 		}
-		r, g, b := hexToRGB(hexCode)
+		r, g, b := client.HexToRGB(hexCode)
 		zap.S().Debug(
 			"color swatch",
 			zap.String("theme", theme.ThemeName),
@@ -54,19 +54,9 @@ func (p *previewer) Preview(theme client.ThemeVariant) (string, error) {
 func (p *previewer) Swatches(theme client.ThemeVariant) string {
 	var line strings.Builder
 	for _, color := range client.AllColors {
-		r, g, b := hexToRGB(theme.Colors[color])
+		r, g, b := client.HexToRGB(theme.Colors[color])
 		fmt.Fprintf(&line, "\033[48;2;%d;%d;%dm  \033[0m", r, g, b)
 	}
 
 	return line.String()
-}
-
-// hexToRGB converts a hex color code (e.g., "#1d2021") to RGB values
-func hexToRGB(hex string) (int, int, int) {
-	var r, g, b int
-	_, err := fmt.Sscanf(hex, "#%02x%02x%02x", &r, &g, &b)
-	if err != nil {
-		return 0, 0, 0 // Return black in case of error
-	}
-	return r, g, b
 }

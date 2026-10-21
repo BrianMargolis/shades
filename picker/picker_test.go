@@ -18,17 +18,21 @@ func testConfig() client.ConfigModel {
 		Themes: client.Themes{
 			"gruvbox": {
 				Variants: map[string]client.ThemeVariant{
-					"dark": {Light: false},
+					"dark": {Light: false, Colors: background("#282828")},
 				},
 			},
 			"everforest": {
 				Variants: map[string]client.ThemeVariant{
-					"light-soft":  {Light: true},
-					"dark-medium": {Light: false, Favorite: true},
+					"light-soft":  {Light: true, Colors: background("#f3ead3")},
+					"dark-medium": {Light: false, Favorite: true, Colors: background("#2d353b")},
 				},
 			},
 		},
 	}
+}
+
+func background(hex string) map[client.Color]string {
+	return map[client.Color]string{client.ColorBG0: hex}
 }
 
 // fakeFzf puts an fzf on PATH that prints output and exits with status, and
@@ -89,7 +93,7 @@ func TestPickFailure(t *testing.T) {
 }
 
 func TestLinePosition(t *testing.T) {
-	lines := Lines(testConfig(), client.Filter{})
+	lines := Lines(testConfig(), client.Filter{}, OrderName)
 
 	tests := []struct {
 		name         string
@@ -118,6 +122,7 @@ func TestLines(t *testing.T) {
 	tests := []struct {
 		name   string
 		filter client.Filter
+		order  Order
 		want   []string
 	}{
 		{
@@ -135,14 +140,51 @@ func TestLines(t *testing.T) {
 				"everforest;dark-medium\t" + favoriteMarker + " everforest;dark-medium",
 			},
 		},
+		{
+			name:  "darkest background first",
+			order: OrderDarkFirst,
+			want: []string{
+				"gruvbox;dark\t  gruvbox;dark",
+				"everforest;dark-medium\t" + favoriteMarker + " everforest;dark-medium",
+				"everforest;light-soft\t  everforest;light-soft",
+			},
+		},
+		{
+			name:  "lightest background first",
+			order: OrderLightFirst,
+			want: []string{
+				"everforest;light-soft\t  everforest;light-soft",
+				"everforest;dark-medium\t" + favoriteMarker + " everforest;dark-medium",
+				"gruvbox;dark\t  gruvbox;dark",
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := Lines(testConfig(), test.filter)
+			got := Lines(testConfig(), test.filter, test.order)
 			if !slices.Equal(got, test.want) {
 				t.Errorf("Lines() = %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestLinesSameBackgroundStaysInNameOrder(t *testing.T) {
+	config := client.ConfigModel{
+		Themes: client.Themes{
+			"b": {Variants: map[string]client.ThemeVariant{"dark": {Colors: background("#202020")}}},
+			"a": {Variants: map[string]client.ThemeVariant{"dark": {Colors: background("#202020")}}},
+			"c": {Variants: map[string]client.ThemeVariant{"dark": {Colors: background("#101010")}}},
+		},
+	}
+
+	for _, order := range []Order{OrderDarkFirst, OrderLightFirst} {
+		lines := Lines(config, client.Filter{}, order)
+		first, _ := linePosition(lines, "a;dark")
+		second, _ := linePosition(lines, "b;dark")
+		if first > second {
+			t.Errorf("Lines() with %s = %q, want a;dark before b;dark", order, lines)
+		}
 	}
 }

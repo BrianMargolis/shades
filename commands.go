@@ -209,6 +209,7 @@ func newInteractiveCommand() *cobra.Command {
 		}),
 	}
 	addFilterFlags(command, &opts.Filter)
+	addOrderFlag(command, &opts.Order)
 	command.Flags().BoolVar(&opts.UseTmux, "tmux", false, "use fzf-tmux, a floating tmux window")
 	return command
 }
@@ -315,19 +316,32 @@ func newClientsCommand() *cobra.Command {
 
 func newPickerListCommand() *cobra.Command {
 	filter := client.Filter{}
+	order := picker.OrderName
 	command := &cobra.Command{
 		Use:    picker.ListCommand,
 		Hidden: true,
 		Args:   cobra.NoArgs,
 		RunE: withConfig(func(cmd *cobra.Command, config client.ConfigModel, args []string) error {
-			for _, line := range picker.Lines(config, filter) {
+			for _, line := range picker.Lines(config, filter, order) {
 				fmt.Println(line)
 			}
 			return nil
 		}),
 	}
 	addFilterFlags(command, &filter)
+	addOrderFlag(command, &order)
 	return command
+}
+
+func addOrderFlag(command *cobra.Command, order *picker.Order) {
+	command.Flags().Var(order, "order", "sort the list by name, or by background: dark-first or light-first")
+	command.RegisterFlagCompletionFunc("order", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		orders := []string{}
+		for _, order := range picker.Orders {
+			orders = append(orders, string(order))
+		}
+		return orders, cobra.ShellCompDirectiveNoFileComp
+	})
 }
 
 func addFilterFlags(command *cobra.Command, filter *client.Filter) {

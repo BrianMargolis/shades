@@ -15,16 +15,18 @@ import (
 const FilterCommand = "_picker-filter"
 
 // The actions FilterCommand takes. Refresh keeps the filter as it is, for
-// reloading after a favorite toggle.
+// reloading after a favorite toggle. Order isn't a filter, but it lives in the
+// prompt the same way, so it goes through here too.
 const (
 	FilterDark      = "dark"
 	FilterLight     = "light"
 	FilterAll       = "all"
 	FilterFavorites = "favorites"
+	FilterOrder     = "order"
 	FilterRefresh   = "refresh"
 )
 
-var FilterActions = []string{FilterDark, FilterLight, FilterAll, FilterFavorites, FilterRefresh}
+var FilterActions = []string{FilterDark, FilterLight, FilterAll, FilterFavorites, FilterOrder, FilterRefresh}
 
 var filterKeys = []struct {
 	key    string
@@ -35,16 +37,19 @@ var filterKeys = []struct {
 	{"alt-l", FilterLight, "light"},
 	{"alt-a", FilterAll, "all"},
 	{"alt-s", FilterFavorites, "starred only"},
+	{"alt-o", FilterOrder, "sort"},
 }
 
 const (
-	promptDark      = "dark"
-	promptLight     = "light"
-	promptFavorites = "★"
-	promptEnd       = "> "
+	promptDark       = "dark"
+	promptLight      = "light"
+	promptFavorites  = "★"
+	promptDarkFirst  = "dark→light"
+	promptLightFirst = "light→dark"
+	promptEnd        = "> "
 )
 
-func prompt(filter client.Filter) string {
+func prompt(filter client.Filter, order Order) string {
 	words := []string{}
 	if filter.OnlyDark {
 		words = append(words, promptDark)
@@ -55,11 +60,18 @@ func prompt(filter client.Filter) string {
 	if filter.OnlyFavorites {
 		words = append(words, promptFavorites)
 	}
+	switch order {
+	case OrderDarkFirst:
+		words = append(words, promptDarkFirst)
+	case OrderLightFirst:
+		words = append(words, promptLightFirst)
+	}
 	return strings.Join(append(words, promptEnd), " ")
 }
 
-func parsePrompt(prompt string) client.Filter {
+func parsePrompt(prompt string) (client.Filter, Order) {
 	filter := client.Filter{}
+	order := OrderName
 	for _, word := range strings.Fields(prompt) {
 		switch word {
 		case promptDark:
@@ -68,9 +80,13 @@ func parsePrompt(prompt string) client.Filter {
 			filter.OnlyLight = true
 		case promptFavorites:
 			filter.OnlyFavorites = true
+		case promptDarkFirst:
+			order = OrderDarkFirst
+		case promptLightFirst:
+			order = OrderLightFirst
 		}
 	}
-	return filter
+	return filter, order
 }
 
 // FilterTransform returns the fzf actions that apply a filter key to the
@@ -79,7 +95,7 @@ func parsePrompt(prompt string) client.Filter {
 // It unbinds one:accept first, because a filter that leaves a single theme
 // would otherwise pick it on the spot. Typing rebinds it.
 func FilterTransform(currentPrompt string, action string) (string, error) {
-	filter := parsePrompt(currentPrompt)
+	filter, order := parsePrompt(currentPrompt)
 	switch action {
 	case FilterDark:
 		filter.OnlyDark, filter.OnlyLight = true, false
@@ -89,15 +105,19 @@ func FilterTransform(currentPrompt string, action string) (string, error) {
 		filter = client.Filter{}
 	case FilterFavorites:
 		filter.OnlyFavorites = !filter.OnlyFavorites
+	case FilterOrder:
+		order = order.next()
 	case FilterRefresh:
 	default:
 		return "", errors.Errorf("unknown filter action %q", action)
 	}
 
+	command := append([]string{"shades", ListCommand}, filter.Flags()...)
+	command = append(command, order.Flags()...)
 	return fmt.Sprintf(
 		"unbind(one)+change-prompt(%s)+reload(%s)",
-		prompt(filter),
-		strings.Join(append([]string{"shades", ListCommand}, filter.Flags()...), " "),
+		prompt(filter, order),
+		strings.Join(command, " "),
 	), nil
 }
 

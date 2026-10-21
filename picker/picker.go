@@ -27,6 +27,7 @@ const favoriteMarker = "\x1b[33m★\x1b[0m"
 
 type PickerOpts struct {
 	client.Filter
+	Order      Order
 	SocketPath string
 	UseTmux    bool
 }
@@ -93,7 +94,7 @@ func (p *picker) pick(
 	}
 	logger.Debugw("config", "config", config)
 
-	pickerOptions := Lines(config, opts.Filter)
+	pickerOptions := Lines(config, opts.Filter, opts.Order)
 	logger.Debugw("options", "options", pickerOptions)
 	if len(pickerOptions) == 0 {
 		if opts.OnlyFavorites {
@@ -125,7 +126,7 @@ func (p *picker) pick(
 		"--track",
 		"--id-nth=1",
 		"--header=" + header(),
-		"--prompt=" + prompt(opts.Filter),
+		"--prompt=" + prompt(opts.Filter, opts.Order),
 		// save an enter once we've narrowed it down to one
 		"--bind=one:accept",
 		// The preview also applies the theme, after a delay. fzf kills a running
@@ -210,14 +211,20 @@ func (p *picker) getCommand(opts PickerOpts) string {
 // Lines builds the fzf input, one "theme;variant<tab>display" line per variant,
 // with favorites starred in the terminal's yellow. The order has to be stable
 // because fzf reloads the list after every favorite toggle.
-func Lines(config client.ConfigModel, filter client.Filter) []string {
-	lines := []string{}
+func Lines(config client.ConfigModel, filter client.Filter, order Order) []string {
+	variants := []client.ThemeVariant{}
 	for _, name := range config.Themes.Names(filter) {
 		variant, err := config.Themes.GetVariant(name)
 		if err != nil {
 			continue
 		}
+		variants = append(variants, variant)
+	}
+	sortVariants(variants, order)
 
+	lines := []string{}
+	for _, variant := range variants {
+		name := variant.ThemeName + ";" + variant.VariantName
 		marker := " "
 		if variant.Favorite {
 			marker = favoriteMarker

@@ -17,8 +17,14 @@ func TestPromptRoundTrips(t *testing.T) {
 	}
 
 	for _, filter := range filters {
-		if got := parsePrompt(prompt(filter)); got != filter {
-			t.Errorf("parsePrompt(%q) = %+v, want %+v", prompt(filter), got, filter)
+		for _, order := range Orders {
+			gotFilter, gotOrder := parsePrompt(prompt(filter, order))
+			if gotFilter != filter || gotOrder != order {
+				t.Errorf(
+					"parsePrompt(%q) = %+v, %s, want %+v, %s",
+					prompt(filter, order), gotFilter, gotOrder, filter, order,
+				)
+			}
 		}
 	}
 }
@@ -65,6 +71,36 @@ func TestFilterTransform(t *testing.T) {
 			prompt: "dark ★ > ",
 			action: FilterRefresh,
 			want:   "unbind(one)+change-prompt(dark ★ > )+reload(shades _picker-list --dark --favorites)",
+		},
+		{
+			name:   "order goes from name to dark first",
+			prompt: "dark > ",
+			action: FilterOrder,
+			want:   "unbind(one)+change-prompt(dark dark→light > )+reload(shades _picker-list --dark --order dark-first)",
+		},
+		{
+			name:   "order goes from dark first to light first",
+			prompt: "dark→light > ",
+			action: FilterOrder,
+			want:   "unbind(one)+change-prompt(light→dark > )+reload(shades _picker-list --order light-first)",
+		},
+		{
+			name:   "order goes from light first back to name",
+			prompt: "★ light→dark > ",
+			action: FilterOrder,
+			want:   "unbind(one)+change-prompt(★ > )+reload(shades _picker-list --favorites)",
+		},
+		{
+			name:   "all clears the filters but keeps the order",
+			prompt: "light ★ dark→light > ",
+			action: FilterAll,
+			want:   "unbind(one)+change-prompt(dark→light > )+reload(shades _picker-list --order dark-first)",
+		},
+		{
+			name:   "refresh keeps the order",
+			prompt: "dark light→dark > ",
+			action: FilterRefresh,
+			want:   "unbind(one)+change-prompt(dark light→dark > )+reload(shades _picker-list --dark --order light-first)",
 		},
 	}
 

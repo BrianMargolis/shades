@@ -63,6 +63,7 @@ theme as you move through the list and applies the one you pick.
 shades interactive        # or shades i
 shades i --dark           # only dark variants (--light for light)
 shades i --favorites      # only variants marked favorite: true
+shades i --order dark-first   # sort by background, darkest first (or light-first)
 shades i --tmux           # use fzf-tmux, i.e. a floating tmux window
 ```
 
@@ -76,8 +77,10 @@ before it opened. Favorites are starred in the list. Inside the picker:
 | `alt-l`  | show only light variants            |
 | `alt-s`  | toggle showing only favorites       |
 | `alt-a`  | show everything                     |
+| `alt-o`  | cycle the sort by background color  |
 
-The prompt shows which filters are on.
+The sort cycles through name, dark→light, and light→dark, going by each theme's
+`BG0`. The prompt shows which filters and which sort are on.
 
 Once you've landed on a theme you like, you can keep it around without opening
 your config:
