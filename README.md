@@ -110,7 +110,9 @@ batteries are included for many popular tools:
 - alacritty
 - bat (requires fish)
 - btop
-- claude code
+- claude code (points `theme` at a custom theme, `~/.claude/themes/shades.json`,
+  and rewrites that file on each change, since running sessions reload theme
+  files but not the `theme` setting)
 - firefox
 - fzf (requires fish)
 - ghostty

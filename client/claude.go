@@ -1,11 +1,21 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"go.uber.org/zap"
 )
+
+// liveThemeName is the custom theme settings.json always points at. A running
+// Claude Code session never re-reads `theme` from settings.json, but it does
+// watch ~/.claude/themes/ and reapply a theme whose file changes, so switching
+// means rewriting this one file rather than pointing `theme` somewhere else.
+const liveThemeName = "shades"
 
 type ClaudeClient struct {
 }
@@ -36,7 +46,18 @@ func (b ClaudeClient) set(theme ThemeVariant) error {
 
 	zap.S().Debugw("applying theme", "client", "claude", "theme", theme.ThemeName, "variant", theme.VariantName, "claudeTheme", themeStr)
 
-	return setClaudeTheme(themeStr)
+	themesDirectory := ExpandTilde("~/.claude/themes")
+	liveTheme, err := liveThemeFor(themeStr, themesDirectory)
+	if err != nil {
+		return err
+	}
+	livePath := filepath.Join(themesDirectory, liveThemeName+".json")
+	if err := writeFileAtomically(livePath, liveTheme); err != nil {
+		return fmt.Errorf("failed to write the live claude theme: %w", err)
+	}
+	zap.S().Debugw("wrote live claude theme", "path", livePath, "from", themeStr)
+
+	return setClaudeTheme("custom:" + liveThemeName)
 }
 
 // claudeThemeName resolves the configured Claude Code theme name for the
@@ -67,12 +88,42 @@ func claudeThemeName(claudeConfig map[string]string, light bool, useANSI bool) s
 	return fallback
 }
 
-// setClaudeTheme writes the theme name into Claude Code's settings.json. The
-// theme used to live in ~/.claude.json, but Claude Code now reads it from
-// ~/.claude/settings.json. jq (rather than encoding/json) is used so the rest
-// of the user's hand-edited settings keep their original key order.
+// liveThemeFor builds the contents of the live theme file for a theme as the
+// config names it: a "custom:<name>" theme is copied from its own file in
+// themesDirectory, and a built-in one (dark, light-ansi, ...) becomes the base
+// of an otherwise empty custom theme.
+func liveThemeFor(themeStr string, themesDirectory string) ([]byte, error) {
+	theme := map[string]any{"base": themeStr}
+
+	if customName, ok := strings.CutPrefix(themeStr, "custom:"); ok {
+		path := filepath.Join(themesDirectory, customName+".json")
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read claude theme %s: %w", path, err)
+		}
+		theme = map[string]any{}
+		if err := json.Unmarshal(content, &theme); err != nil {
+			return nil, fmt.Errorf("failed to parse claude theme %s: %w", path, err)
+		}
+	}
+
+	theme["name"] = liveThemeName
+	return json.MarshalIndent(theme, "", "  ")
+}
+
+// setClaudeTheme writes the theme name into Claude Code's settings.json, which
+// is what a newly started session reads. The theme used to live in
+// ~/.claude.json, but Claude Code now reads it from ~/.claude/settings.json.
+// jq (rather than encoding/json) is used so the rest of the user's hand-edited
+// settings keep their original key order. The name never changes now, so the
+// file is left alone once it's set, rather than rewritten on every switch.
 func setClaudeTheme(themeStr string) error {
 	settingsPath := ExpandTilde("~/.claude/settings.json")
+
+	current, err := Run("jq", "-r", ".theme // empty", settingsPath)
+	if err == nil && strings.TrimSpace(string(current)) == themeStr {
+		return nil
+	}
 
 	// jq has no in-place flag, so emit to an adjacent temp file and atomically
 	// rename it over the original; keeping the temp file on the same filesystem
