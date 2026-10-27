@@ -218,7 +218,9 @@ Anything without a dedicated client can usually be handled by the `template`
 client, which renders a file per entry in `templates`. Placeholders are color
 names wrapped in `escape-char` on both sides, so with `escape-char: "%"`,
 `%RED%` becomes `#E67E80` and `%RED_HEX%` becomes `E67E80` (for consumers like
-GLSL that can't take a literal `#`).
+GLSL that can't take a literal `#`). `%BAT_THEME%` becomes the bat theme name
+the `bat` client sets (`everforest-dark-medium`), for configs that name a syntax
+theme themselves rather than reading `$BAT_THEME`.
 
 ```yaml
 templates:
