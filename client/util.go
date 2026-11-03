@@ -125,12 +125,14 @@ func DoTemplate(
 }
 
 // RenderTemplate replaces color placeholders wrapped in escapeChar on both
-// sides (e.g. escapeChar "%" matches "%RED%") with their hex values.
+// sides (e.g. escapeChar "%" matches "%RED%") with their hex values, and
+// BAT_THEME with the variant's bat theme name.
 func RenderTemplate(
 	template string,
 	escapeChar string,
 	variant ThemeVariant,
 ) string {
+	template = strings.ReplaceAll(template, escapeChar+"BAT_THEME"+escapeChar, BatThemeName(variant))
 	return renderPlaceholders(template, escapeChar, escapeChar, variant)
 }
 
