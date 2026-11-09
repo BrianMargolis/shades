@@ -62,7 +62,6 @@ client:
     clock-mode-colour: "{ORANGE}"
   btop:
     theme-path: "~/.config/btop/themes"
-    btop-config-path: "~/dotfiles/btop/btop.conf"
 # Arbitrary file templating for apps without a dedicated client: each entry
 # renders template-path to output-path, replacing placeholders wrapped in
 # escape-char on both sides (e.g. escape-char "%" turns "%RED%" into the red

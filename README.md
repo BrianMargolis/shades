@@ -109,7 +109,9 @@ batteries are included for many popular tools:
 
 - alacritty
 - bat (requires fish)
-- btop
+- btop (copies `<theme-path>/<theme>-<variant>.theme` to
+  `<theme-path>/shades.theme` on each change, so `btop.conf` sets
+  `color_theme = "shades"` once and never changes)
 - claude code (points `theme` at a custom theme, `~/.claude/themes/shades.json`,
   and rewrites that file on each change, since running sessions reload theme
   files but not the `theme` setting)

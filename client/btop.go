@@ -2,10 +2,17 @@ package client
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
+
+// btopLiveTheme is the theme file this client rewrites on every change. btop.conf
+// names it once (color_theme = "shades") and never changes, so the config can
+// live in git without churning on each theme switch.
+const btopLiveTheme = "shades.theme"
 
 type BtopClient struct{}
 
@@ -23,18 +30,18 @@ func (b BtopClient) set(theme ThemeVariant) error {
 		return err
 	}
 
-	btopConfigPath := ExpandTilde(config.Client["btop"]["btop-config-path"])
 	themePath := ExpandTilde(config.Client["btop"]["theme-path"])
-	configLine := fmt.Sprintf("color_theme = %s/%s-%s.theme", themePath, theme.ThemeName, theme.VariantName)
+	sourcePath := filepath.Join(themePath, fmt.Sprintf("%s-%s.theme", theme.ThemeName, theme.VariantName))
+	livePath := filepath.Join(themePath, btopLiveTheme)
 
-	zap.S().Debugw("applying theme", "client", "btop", "theme", theme.ThemeName, "variant", theme.VariantName, "btopConfigPath", btopConfigPath)
+	zap.S().Debugw("applying theme", "client", "btop", "theme", theme.ThemeName, "variant", theme.VariantName, "sourcePath", sourcePath, "livePath", livePath)
 
-	n, err := ReplaceAtTag(btopConfigPath, configLine, "color_theme = ")
+	content, err := os.ReadFile(sourcePath)
 	if err != nil {
-		return errors.Wrap(err, "replacing theme in btop config")
+		return errors.Wrapf(err, "reading btop theme %s", sourcePath)
 	}
-	if n == 0 {
-		zap.S().Warnw("no replacements made in btop config", "btopConfigPath", btopConfigPath)
+	if err := os.WriteFile(livePath, content, 0644); err != nil {
+		return errors.Wrapf(err, "writing btop theme to %s", livePath)
 	}
 
 	return nil
